@@ -1,0 +1,27 @@
+# Workflow for hcontours
+name: Go
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: '1.22'
+    - name: Install dependencies
+      run: |
+        go get .
+        go get github.com/spf13/pflag
+        go get golang.org/x/exp
+    - name: Build
+      run: go build -v ./...
+    - name: Test
+      run: go test -v ./...
+#    - name: Use
+#      run: cd examples && ../hcontours beach.png -t 32,64,96,128,160,192,224
