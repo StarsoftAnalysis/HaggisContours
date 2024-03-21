@@ -90,6 +90,11 @@ func (svg *SVGfile) openStart(filename string, opts OptsT) {
 		translateX, translateY, scale,
 	)
 	svg.write(g)
+	if opts.frame {
+		frame := fmt.Sprintf("<rect width=\"%d\" height=\"%d\" />", opts.width, opts.height)
+		fmt.Println(frame)
+		svg.write(frame)
+	}
 }
 
 func (svg *SVGfile) stopSave() {

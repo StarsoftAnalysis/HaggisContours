@@ -53,6 +53,7 @@ type OptsT struct {
 	thresholds []int
 	margin     float64
 	paper      string
+	frame      bool
 }
 
 const white = 0xff
