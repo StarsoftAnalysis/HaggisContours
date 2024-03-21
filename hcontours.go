@@ -74,7 +74,7 @@ func compressContour(c ContourT) ContourT {
 	}
 	// need to add the last move
 	cc = append(cc, c[i])
-	fmt.Printf("c: reduced len from %d to %d\n", len(c), len(cc))
+	//fmt.Printf("cC: reduced len from %d to %d\n", len(c), len(cc))
 	return cc
 }
 
