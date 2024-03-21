@@ -29,10 +29,8 @@ func getPix(imageData *image.NRGBA, width, height int, p PointT) int {
 }
 
 // Calculate the angle from p1 to p2, in radians widdershins.
-func relAngle(p1, p2 int, width int) float64 {
-	pt1 := PointT{p1 % width, p1 / width}
-	pt2 := PointT{p2 % width, p2 / width}
-	return math.Atan2(float64(pt2.y-pt1.y), float64(pt2.x-pt1.x))
+func relAngle(p1, p2 Point64T) float64 {
+	return math.Atan2(float64(p2.y-p1.y), float64(p2.x-p1.x))
 }
 
 // Return true if the two angles are close enough
@@ -40,44 +38,44 @@ func sameAngle(a1, a2 float64) bool {
 	return math.Abs(a1-a2) < 0.01
 }
 
-// Simplify a list of moves (between points) by combining consecutive moves
+// Simplify contour by combining consecutive moves
 // in the same direction.
-func compressMoves(moves []int, width int) []int {
-	// moves is a slice of Pix indices.
-	if len(moves) < 3 {
-		return moves
+func compressContour(c ContourT) ContourT {
+	if len(c) < 3 {
+		return c
 	}
-	var cmoves = make([]int, 0, len(moves)/2) // optimistic guess on the amount of compression
-	p1 := moves[0]
-	cmoves = append(cmoves, p1)
+	var cc = make(ContourT, 0, len(c)/2) // optimistic guess on the amount of compression
+	p1 := c[0]
+	cc = append(cc, p1)
 	i := 1
-	p2 := moves[i]
-	p3 := moves[i+1] // start the loop about here
+	p2 := c[i]
+	p3 := c[i+1] // start the loop about here
 	// calculate angle from one point to the next
-	dir1 := relAngle(p1, p2, width)
-	for i < len(moves)-1 {
-		if p2 == p1 {
+	dir1 := relAngle(p1, p2)
+	for i < len(c)-1 {
+		if p2.Equal(p1) {
 			// ignore non-moves
 		} else {
-			dir2 := relAngle(p2, p3, width)
+			dir2 := relAngle(p2, p3)
 			if sameAngle(dir1, dir2) {
 				// do nothing: p1 and dir1 stay the same
 			} else {
 				// new direction -- add the point to the compressed array
-				cmoves = append(cmoves, p2)
+				cc = append(cc, p2)
 				p1 = p2
 				dir1 = dir2
 			}
 		}
 		i += 1
 		p2 = p3
-		if i+1 < len(moves) {
-			p3 = moves[i+1]
+		if i+1 < len(c) {
+			p3 = c[i+1]
 		}
 	}
 	// need to add the last move
-	cmoves = append(cmoves, moves[i])
-	return cmoves
+	cc = append(cc, c[i])
+	fmt.Printf("c: reduced len from %d to %d\n", len(c), len(cc))
+	return cc
 }
 
 // Calculate the weighted average between points 'out' and 'in',
@@ -173,11 +171,12 @@ func b2c(b bool) string {
 	return "f"
 }
 
-func contourFinder(imageData *image.NRGBA, width, height int, threshold int, svgF *SVGfile) int {
-	//var contours = make([]ContourT, 0, 10)
+func contourFinder(imageData *image.NRGBA, width, height int, threshold int, svgF *SVGfile) ContourS {
+	//var contours = make(ContourS, 0, 10)
 	seen := make([]bool, width*height)
 	skipping := false
 	contourCount := 0
+	contours := make(ContourS, 0, 3)
 	for y := 0; y < height; y++ {
 		for x := 0; x < width; x++ {
 			p := PointT{x, y}
@@ -185,7 +184,8 @@ func contourFinder(imageData *image.NRGBA, width, height int, threshold int, svg
 				if !seen[x+y*width] && !skipping {
 					contour, moreSeen := traceContour(imageData, width, height, threshold, p, svgF)
 					contourCount += 1
-					//contours = append(contours, contour)
+					ccontour := compressContour(contour)
+					contours = append(contours, ccontour)
 					// this could be a _lot_ more efficient
 					for _, p := range moreSeen {
 						seen[p.x+p.y*width] = true
@@ -199,8 +199,7 @@ func contourFinder(imageData *image.NRGBA, width, height int, threshold int, svg
 					//}
 					if svgF != nil {
 						// Single polygon -- assume the contour is closed
-						//ccontour := compressMoves(contour, width)
-						svgF.polygon(contour, width)
+						svgF.polygon(ccontour, width)
 					}
 				}
 				skipping = true
@@ -209,7 +208,8 @@ func contourFinder(imageData *image.NRGBA, width, height int, threshold int, svg
 			}
 		}
 	}
-	return contourCount
+	// contours are really only returned for test cases
+	return contours
 }
 
 func parseArgs(args []string) OptsT {
@@ -252,8 +252,8 @@ func createSVG(opts OptsT) string {
 	svgF.openStart(svgFilename, opts)
 	for t, threshold := range opts.thresholds {
 		svgF.layer(t + 1) // Axidraw layers start at 1, not 0
-		contourCount := contourFinder(img, opts.width, opts.height, threshold, svgF)
-		fmt.Printf("%d contours found at threshold %d\n", contourCount, threshold)
+		contours := contourFinder(img, opts.width, opts.height, threshold, svgF)
+		fmt.Printf("%d contours found at threshold %d\n", len(contours), threshold)
 	}
 	svgF.stopSave()
 	return svgFilename
