@@ -38,8 +38,7 @@ func sameAngle(a1, a2 float64) bool {
 	return math.Abs(a1-a2) < 0.01
 }
 
-// Simplify contour by combining consecutive moves
-// in the same direction.
+// Simplify contour by combining consecutive moves in the same direction.
 func compressContour(c ContourT) ContourT {
 	if len(c) < 3 {
 		return c
@@ -49,9 +48,8 @@ func compressContour(c ContourT) ContourT {
 	cc = append(cc, p1)
 	i := 1
 	p2 := c[i]
-	p3 := c[i+1] // start the loop about here
-	// calculate angle from one point to the next
-	dir1 := relAngle(p1, p2)
+	p3 := c[i+1]
+	dir1 := relAngle(p1, p2) // calculate angle from one point to the next
 	for i < len(c)-1 {
 		if p2.Equal(p1) {
 			// ignore non-moves
@@ -151,14 +149,15 @@ func traceContour(imageData *image.NRGBA, width, height int, threshold int, star
 			inPix = nextInPix
 			//fmt.Printf("tE: straight on: now in=%v inPix=%v  out=%v outPix=%v  dir=%v\n", in, inPix, out, outPix, direction)
 		}
+
 		// OPTION: add the point to the contour here to include the last point again.
+		// Add point to the contour
+		contour = append(contour, pointWeightedAvg(imageData, out, in, outPix, inPix, threshold))
 		// Break if back at beginning
 		//fmt.Printf("tE: break?  in=%v start=%v   dir=%v startDir=%v\n", in, start, direction, startDir)
 		if in.Equal(start) && direction == startDir {
 			break
 		}
-		// Add point to the contour
-		contour = append(contour, pointWeightedAvg(imageData, out, in, outPix, inPix, threshold))
 	}
 
 	return contour, seen
@@ -199,7 +198,9 @@ func contourFinder(imageData *image.NRGBA, width, height int, threshold int, svg
 					//}
 					if svgF != nil {
 						// Single polygon -- assume the contour is closed
-						svgF.polygon(ccontour, width)
+						//svgF.polygon(ccontour, width)
+						// Or separate lines
+						svgF.polyline(ccontour, width, height)
 					}
 				}
 				skipping = true
@@ -246,12 +247,12 @@ func createSVG(opts OptsT) string {
 	if opts.frame {
 		frameString = "F"
 	}
-	optString := fmt.Sprintf("-contours-t%sm%g%s%s", intsToString(opts.thresholds), opts.margin, opts.paper, frameString)
+	optString := fmt.Sprintf("-hc-t%sm%g%s%s", intsToString(opts.thresholds), opts.margin, opts.paper, frameString)
 	ext := filepath.Ext(opts.infile)
 	svgFilename := strings.TrimSuffix(opts.infile, ext) + optString + ".svg"
 	svgF.openStart(svgFilename, opts)
 	for t, threshold := range opts.thresholds {
-		svgF.layer(t + 1) // Axidraw layers start at 1, not 0
+		svgF.layer(t + 1) // Axidraw layers start at 1, not 0   FIXME no, they don't
 		contours := contourFinder(img, opts.width, opts.height, threshold, svgF)
 		fmt.Printf("%d contours found at threshold %d\n", len(contours), threshold)
 	}

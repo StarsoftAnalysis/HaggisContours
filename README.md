@@ -6,7 +6,7 @@ A method of converting a heightmap (or similar input) to a set of contours, usin
 
 This is a Go programme for extacting contours from a [heightmap](https://en.wikipedia.org/wiki/Heightmap), or from a similar data source such as an image.
 
-It uses a simple algorithm, based on the behaviour of wild haggis on the mountains of Scotland.  As is [well known](https://wildhaggis.com/),
+It uses a simple algorithm, based on the behaviour of wild haggis on the mountains of Scotland.  As is [well known](https://www.thehaggis.com/wild-haggis-all-about-haggis/),
 dextrous wild haggis have their left legs longer than their right legs, which makes it easy for them to run clockwise
 around hillsides to escape predators.  Obviously the opposite applies to the sinistrous sub-species, which don't.
 

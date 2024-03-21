@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"path"
 )
 
 type paperSize struct {
@@ -49,6 +50,69 @@ func (svg *SVGfile) polygon(contour ContourT, width int) {
 	svg.write(fmt.Sprint("\" />\n"))
 }
 
+// Find the intercept between the line through p1 and p2 and the vertical line at x
+func interceptX(p1, p2 Point64T, x float64) Point64T {
+	m := (p2.y - p1.y) / (p2.x - p1.x)
+	c := p1.y - m*p1.x
+	y := m*x + c
+	//fmt.Printf("iX: p1=%v p2=%v x=%v m=%v c=%v y=%v\n", p1, p2, x, m, c, y)
+	return Point64T{x, y}
+}
+
+// Find the intercept between the line through p1 and p2 and the horizontal line at y
+func interceptY(p1, p2 Point64T, y float64) Point64T {
+	m := (p2.y - p1.y) / (p2.x - p1.x)
+	c := p1.y - m*p1.x
+	x := (y - c) / m
+	return Point64T{x, y}
+}
+
+func (svg *SVGfile) polyline(contour ContourT, width, height int) {
+	// First attempt at dealing with contours that go off the edge
+	// PLAN: stop the contour, and start a new one when out is back in the image. -- will have to build a list of contour segments to return.
+	//   ALTERNATIVE: reverse direction... sounds messy
+	// Points that are off the image mean that we break the line and start a new one.
+	//fmt.Printf("polyline: contour=%v\n", contour)
+	// FIXME what of off x AND y ?
+	lineOpen := false
+	for i, p := range contour {
+		if offImage(p, width, height) {
+			fmt.Printf("polyline: offImage at %v  lineOpen=%v\n", p, lineOpen)
+			if lineOpen {
+				// stop the line - end right at the edge -- but which edge?
+				var endPoint Point64T
+				if p.x < 0 {
+					endPoint = interceptX(contour[i-1], p, float64(0))
+				} else if p.x > float64(width-1) {
+					endPoint = interceptX(contour[i-1], p, float64(width-1))
+				} else if p.y < 0 {
+					endPoint = interceptY(contour[i-1], p, float64(0))
+				} else { // must be: if p.y > float64(height-1) {
+					endPoint = interceptY(contour[i-1], p, float64(height-1))
+				}
+				//fmt.Printf("polyline: c-1=%v  p=%v  w=%v  h=%v  endPoint=%v\n", contour[i-1], p, width, height, endPoint)
+				svg.write(fmt.Sprintf("%.2f,%.2f ", endPoint.x, endPoint.y))
+				svg.write("\" />\n")
+				lineOpen = false
+			} else {
+				// line already closed -- skip the point
+			}
+		} else {
+			if !lineOpen {
+				// start a new line
+				// TODO start at the edge (as above) (if i>0)
+				svg.write("<polyline points=\"")
+				lineOpen = true
+			}
+			svg.write(fmt.Sprintf("%.2f,%.2f ", p.x, p.y))
+		}
+	}
+	if lineOpen {
+		// stop the line
+		svg.write("\" />\n")
+	}
+}
+
 func (svg *SVGfile) openStart(filename string, opts OptsT) {
 	svg.filename = filename
 	fh, err := os.Create(svg.filename)
@@ -66,7 +130,7 @@ func (svg *SVGfile) openStart(filename string, opts OptsT) {
 		paperSizes[opts.paper].width, paperSizes[opts.paper].height, viewbox, bg, xmlns)
 	svg.write(svgAttribute)
 
-	// Apply translation and scale to whole plot: but don't magnify by more than a factor of 2
+	// Apply translation and scale to whole plot: but don't magnify too much
 	//g := fmt.Sprintf("<g transform=\"translate(%g,%g) scale(%g)\" stroke=\"black\" stroke-width=\"1\" stroke-linecap=\"round\" stroke-linejoin=\"round\" fill=\"none\">\n",
 	printWidth := paperSizes[opts.paper].width - 2*opts.margin
 	printHeight := paperSizes[opts.paper].height - 2*opts.margin
@@ -85,15 +149,21 @@ func (svg *SVGfile) openStart(filename string, opts OptsT) {
 		translateX = (paperSizes[opts.paper].width - float64(opts.width)*scale) / 2
 		translateY = opts.margin
 	}
-	scale = min(scale, 2.0)
+	const maxScale = 8.0
+	scale = min(scale, maxScale)
 	g := fmt.Sprintf("<g stroke=\"black\" stroke-width=\"0.1mm\" stroke-linecap=\"round\" stroke-linejoin=\"round\" fill=\"none\" transform=\"translate(%g,%g) scale(%.3f)\">\n",
 		translateX, translateY, scale,
 	)
 	svg.write(g)
 	if opts.frame {
-		frame := fmt.Sprintf("<rect width=\"%d\" height=\"%d\" />", opts.width, opts.height)
-		fmt.Println(frame)
+		frame := fmt.Sprintf("<rect width=\"%d\" height=\"%d\" />\n", opts.width-1, opts.height-1)
+		fmt.Print(frame)
 		svg.write(frame)
+
+		// TEMP -- shove the image in too
+		image := fmt.Sprintf("<image href=\"%s\" width=\"%d\" height=\"%d\" />\n", path.Base(opts.infile), opts.width, opts.height)
+		fmt.Print(image)
+		svg.write(image)
 	}
 }
 
