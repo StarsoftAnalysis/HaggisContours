@@ -51,7 +51,7 @@ func TestTraceContour(t *testing.T) {
 		//		got, _ := traceContour(img, width, height, 128, td.start, nil)
 		got, _ := traceContour(img, width, height, 128, td.start, nil)
 		if !got.Equal(td.contour) {
-			t.Errorf("Wrong result for %s/%v (wanted=%v  got %v)\n", td.infile, td.start, td.contour, got)
+			t.Errorf("Wrong result for %s/%v\n\twanted=%v\n\t   got %v\n", td.infile, td.start, td.contour, got)
 		}
 	}
 }

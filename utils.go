@@ -113,7 +113,7 @@ func offImage(p Point64T, width, height int) bool {
 	//	fmt.Printf("oI: x=%v width=%v\n", p.x, width)
 	//}
 	// FIXME > or >= ?
-	if p.x < 0.0 || p.y < 0.0 || p.x > float64(width-1) || p.y > float64(height-1) {
+	if p.x < 0.0 || p.y < 0.0 || p.x > float64(width) || p.y > float64(height) {
 		return true
 	}
 	return false

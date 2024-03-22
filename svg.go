@@ -67,31 +67,35 @@ func interceptY(p1, p2 Point64T, y float64) Point64T {
 	return Point64T{x, y}
 }
 
+// Find the point on the edge of the image where the line
+// from p1 to p2 crosses the edge.
+// Assumes p1 is without the image, p2 is within it.
+func edgePoint(outPoint, inPoint Point64T, width, height int) Point64T {
+	if outPoint.x < 0 {
+		outPoint = interceptX(inPoint, outPoint, 0)
+	}
+	if outPoint.x > float64(width-1) {
+		outPoint = interceptX(inPoint, outPoint, float64(width))
+	}
+	if outPoint.y < 0 {
+		outPoint = interceptY(inPoint, outPoint, 0)
+	}
+	if outPoint.y > float64(height-1) {
+		outPoint = interceptY(inPoint, outPoint, float64(height))
+	}
+	return outPoint
+}
+
 func (svg *SVGfile) polyline(contour ContourT, width, height int) {
-	// First attempt at dealing with contours that go off the edge
-	// PLAN: stop the contour, and start a new one when out is back in the image. -- will have to build a list of contour segments to return.
-	//   ALTERNATIVE: reverse direction... sounds messy
-	// Points that are off the image mean that we break the line and start a new one.
-	//fmt.Printf("polyline: contour=%v\n", contour)
-	// FIXME what of off x AND y ?
 	lineOpen := false
 	for i, p := range contour {
 		if offImage(p, width, height) {
-			fmt.Printf("polyline: offImage at %v  lineOpen=%v\n", p, lineOpen)
+			//fmt.Printf("polyline: offImage at %v  lineOpen=%v\n", p, lineOpen)
 			if lineOpen {
-				// stop the line - end right at the edge -- but which edge?
-				var endPoint Point64T
-				if p.x < 0 {
-					endPoint = interceptX(contour[i-1], p, float64(0))
-				} else if p.x > float64(width-1) {
-					endPoint = interceptX(contour[i-1], p, float64(width-1))
-				} else if p.y < 0 {
-					endPoint = interceptY(contour[i-1], p, float64(0))
-				} else { // must be: if p.y > float64(height-1) {
-					endPoint = interceptY(contour[i-1], p, float64(height-1))
-				}
-				//fmt.Printf("polyline: c-1=%v  p=%v  w=%v  h=%v  endPoint=%v\n", contour[i-1], p, width, height, endPoint)
-				svg.write(fmt.Sprintf("%.2f,%.2f ", endPoint.x, endPoint.y))
+				// stop the line - end right at the edge(s)
+				edgeP := edgePoint(p, contour[i-1], width, height)
+				//fmt.Printf("polyline: c-1=%v  p=%v  w=%v  h=%v  edgeP=%v\n", contour[i-1], p, width, height, edgeP)
+				svg.write(fmt.Sprintf("%.2f,%.2f ", edgeP.x, edgeP.y))
 				svg.write("\" />\n")
 				lineOpen = false
 			} else {
@@ -100,8 +104,12 @@ func (svg *SVGfile) polyline(contour ContourT, width, height int) {
 		} else {
 			if !lineOpen {
 				// start a new line
-				// TODO start at the edge (as above) (if i>0)
 				svg.write("<polyline points=\"")
+				if i > 0 {
+					// Not the first point -- we've come back from off-image, so start on the edge
+					edgeP := edgePoint(contour[i-1], p, width, height)
+					svg.write(fmt.Sprintf("%.2f,%.2f ", edgeP.x, edgeP.y))
+				}
 				lineOpen = true
 			}
 			svg.write(fmt.Sprintf("%.2f,%.2f ", p.x, p.y))

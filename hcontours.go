@@ -33,8 +33,9 @@ func relAngle(p1, p2 Point64T) float64 {
 	return math.Atan2(float64(p2.y-p1.y), float64(p2.x-p1.x))
 }
 
-// Return true if the two angles are close enough
+// Return true if the two angles (in radians) are close enough
 func sameAngle(a1, a2 float64) bool {
+	// FIXME should do mod(2pi)?
 	return math.Abs(a1-a2) < 0.01
 }
 
@@ -52,7 +53,7 @@ func compressContour(c ContourT) ContourT {
 	dir1 := relAngle(p1, p2) // calculate angle from one point to the next
 	for i < len(c)-1 {
 		if p2.Equal(p1) {
-			// ignore non-moves
+			// drop non-moves
 		} else {
 			dir2 := relAngle(p2, p3)
 			if sameAngle(dir1, dir2) {
@@ -80,6 +81,8 @@ func compressContour(c ContourT) ContourT {
 // based on where the threshold lies between the two pixel values.
 // We expect the out pixel to have a higher value (i.e. be lighter)
 // than the in pixel.
+// The answer is shifted by 0.5 in each direction to account for
+// the fence-post error: we're moving from the centres of pixels to the edges.
 func pointWeightedAvg(img *image.NRGBA, out, in PointT, outPix, inPix int, threshold int) Point64T {
 	//outpix := getPix(img, out)
 	//inpix := getPix(img, in)
@@ -87,8 +90,8 @@ func pointWeightedAvg(img *image.NRGBA, out, in PointT, outPix, inPix int, thres
 		panic(fmt.Sprintf("pointWeightedAvg: points %v and %v shouldn't have the same pixel value (%v)", out, in, outPix))
 	}
 	proportion := float64(outPix-threshold) / float64(outPix-inPix)
-	avgX := float64(out.x) + float64(in.x-out.x)*proportion
-	avgY := float64(out.y) + float64(in.y-out.y)*proportion
+	avgX := float64(out.x) + float64(in.x-out.x)*proportion + 0.5
+	avgY := float64(out.y) + float64(in.y-out.y)*proportion + 0.5
 	//fmt.Printf("pWA: out=%v %v  in=%v %v  t=%v  prop=%v  avg=%.2f,%.2f\n", out, outPix, in, inPix, threshold, proportion, avgX, avgY)
 	return Point64T{avgX, avgY}
 }
