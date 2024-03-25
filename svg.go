@@ -42,7 +42,7 @@ func (svg *SVGfile) polygon(contour ContourT, width int) {
 	// Single polygon -- assume the contour is closed
 	// e.g.  <polygon points="100,100 150,25 150,75 200,0" fill="none" stroke="black" />
 	//svg.write(fmt.Sprintf("<!-- contour: %v -->\n", contour))
-	svg.write(fmt.Sprint("<polygon points=\""))
+	svg.write(fmt.Sprint("<polygon stroke-color=\"blue\" points=\""))
 	for _, p := range contour {
 		svg.write(fmt.Sprintf("%.2f,%.2f ", p.x, p.y))
 	}
@@ -70,6 +70,8 @@ func interceptY(p1, p2 Point64T, y float64) Point64T {
 // Find the point on the edge of the image where the line
 // from p1 to p2 crosses the edge.
 // Assumes p1 is without the image, p2 is within it.
+// NOTE to match with offImage() below, the edge is actually
+// 1 pixel in.
 func edgePoint(outPoint, inPoint Point64T, width, height int) Point64T {
 	if outPoint.x < 0 {
 		outPoint = interceptX(inPoint, outPoint, 0)
@@ -86,37 +88,66 @@ func edgePoint(outPoint, inPoint Point64T, width, height int) Point64T {
 	return outPoint
 }
 
+// 'off the image' includes contours around shapes that hit the edge.
+// Because values have already been increased by 0.5 (in PointWeightedAvg()),
+// choose anything here that's within 1 pixel of the edge.
+func offImage(p Point64T, width, height int) bool {
+	//if p.x > float64(width-2) {
+	//	fmt.Printf("oI: x=%v width=%v\n", p.x, width)
+	//}
+	//epsilon := 0.0 // FIXME or 0.01 ?  or has the issue gone away by using round() in the average calc function
+	//if p.x < 0.0 || p.y < 0.0 || p.x > float64(width-1) || p.y > float64(height-1) {
+	//if p.x < 1.0 || p.y < 1.0 || p.x > float64(width-1) || p.y > float64(height-1) {
+	// FIXME arbitrary limit of 0.5 from the edge   NO! that doesn't work
+	//if p.x < 0.5 || p.y < 0.5 || p.x > float64(width)-0.5 || p.y > float64(height)-0.5 {
+	// try 0.9 -- or do the rounding in PWA
+	const limit = 0.0
+	if p.x < limit || p.y < limit || p.x > float64(width)-limit || p.y > float64(height)-limit {
+		return true
+	}
+	return false
+}
+
+// Edge case (literally) -- line that starts and ends off-image -- see test11.png
+
 func (svg *SVGfile) polyline(contour ContourT, width, height int) {
 	lineOpen := false
+	fmt.Printf("polyline: contour=%v\n", contour)
 	for i, p := range contour {
 		if offImage(p, width, height) {
-			//fmt.Printf("polyline: offImage at %v  lineOpen=%v\n", p, lineOpen)
+			fmt.Printf("polyline: offImage at %v  lineOpen=%v\n", p, lineOpen)
 			if lineOpen {
 				// stop the line - end right at the edge(s)
 				edgeP := edgePoint(p, contour[i-1], width, height)
-				//fmt.Printf("polyline: c-1=%v  p=%v  w=%v  h=%v  edgeP=%v\n", contour[i-1], p, width, height, edgeP)
+				fmt.Printf("polyline: stopping c-1=%v  p=%v  w=%v  h=%v  edgeP=%v\n", contour[i-1], p, width, height, edgeP)
 				svg.write(fmt.Sprintf("%.2f,%.2f ", edgeP.x, edgeP.y))
 				svg.write("\" />\n")
 				lineOpen = false
 			} else {
+				fmt.Printf("polyline: skipping %v\n", p)
 				// line already closed -- skip the point
+				// But wait!  what if we've gone over a corner?  FIXME TODO
 			}
 		} else {
+			fmt.Printf("polyline: on Image at %v  lineOpen=%v\n", p, lineOpen)
 			if !lineOpen {
 				// start a new line
 				svg.write("<polyline points=\"")
 				if i > 0 {
 					// Not the first point -- we've come back from off-image, so start on the edge
 					edgeP := edgePoint(contour[i-1], p, width, height)
+					fmt.Printf("polyline: starting at edgeP %v\n", edgeP)
 					svg.write(fmt.Sprintf("%.2f,%.2f ", edgeP.x, edgeP.y))
 				}
 				lineOpen = true
 			}
+			fmt.Printf("polyline: adding %v\n", p)
 			svg.write(fmt.Sprintf("%.2f,%.2f ", p.x, p.y))
 		}
 	}
 	if lineOpen {
 		// stop the line
+		fmt.Printf("polyline: final close\n")
 		svg.write("\" />\n")
 	}
 }
@@ -159,12 +190,16 @@ func (svg *SVGfile) openStart(filename string, opts OptsT) {
 	}
 	const maxScale = 8.0
 	scale = min(scale, maxScale)
-	g := fmt.Sprintf("<g stroke=\"black\" stroke-width=\"0.1mm\" stroke-linecap=\"round\" stroke-linejoin=\"round\" fill=\"none\" transform=\"translate(%g,%g) scale(%.3f)\">\n",
+	// Testing only: add arrows to lines  From https://developer.mozilla.org/en-US/docs/Web/SVG/Element/marker
+	marker := " <defs> <!-- A marker to be used as an arrowhead --> <marker id=\"arrow\" viewBox=\"0 0 10 10\" refX=\"5\" refY=\"5\" markerWidth=\"6\" markerHeight=\"6\" orient=\"auto-start-reverse\"> <path d=\"M 0 0 L 10 5 L 0 10 z\" /> </marker> </defs>"
+	svg.write(marker)
+	// NOTE marker-end is for dev only
+	g := fmt.Sprintf("<g stroke=\"black\" stroke-width=\"0.1mm\" stroke-linecap=\"round\" stroke-linejoin=\"round\" fill=\"none\" xmarker-end=\"url(#arrow)\" transform=\"translate(%g,%g) scale(%.3f)\">\n",
 		translateX, translateY, scale,
 	)
 	svg.write(g)
 	if opts.frame {
-		frame := fmt.Sprintf("<rect width=\"%d\" height=\"%d\" />\n", opts.width-1, opts.height-1)
+		frame := fmt.Sprintf("<rect width=\"%d\" height=\"%d\" />\n", opts.width, opts.height)
 		fmt.Print(frame)
 		svg.write(frame)
 

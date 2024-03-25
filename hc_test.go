@@ -39,7 +39,7 @@ func TestTraceContour(t *testing.T) {
 			{0.498, 1}, {1, 0.498}, {2, 0.498}, {3, 0.498}, {3.502, 1}, {3, 1.502}, {2.502, 2}, {2, 2.502}, {1.502, 3}, {1, 3.502}, {0.498, 3}, {0.498, 2},
 		}, PointT{1, 1}},
 		{"tests/test4.png", ContourT{
-			{0.498, 0}, {1, -0.502}, {1.502, 0}, {2, 0.498}, {2.502, 1}, {2.502, 2}, {2, 2.502}, {1.502, 3}, {1, 3.502}, {0.498, 3}, {0, 2.502}, {-0.502, 2}, {-0.502, 1}, {0, 0.498},
+			{0.998, 1.500}, {1.500, 0.998}, {2.500, 0.998}, {3.002, 1.500}, {3.002, 2.500}, {2.500, 3.002}, {1.500, 3.002}, {0.998, 2.500}, {0.998, 1.500},
 		}, PointT{1, 0}},
 	}
 	for _, td := range testdata {
@@ -51,7 +51,7 @@ func TestTraceContour(t *testing.T) {
 		//		got, _ := traceContour(img, width, height, 128, td.start, nil)
 		got, _ := traceContour(img, width, height, 128, td.start, nil)
 		if !got.Equal(td.contour) {
-			t.Errorf("Wrong result for %s/%v\n\twanted=%v\n\t   got %v\n", td.infile, td.start, td.contour, got)
+			t.Errorf("Wrong result for %s start %v:\n\twanted=%v\n\t   got %v\n", td.infile, td.start, td.contour, got)
 		}
 	}
 }

@@ -108,13 +108,7 @@ func intsToString(ints []int) string {
 	return strings.Join(strs, ",")
 }
 
-func offImage(p Point64T, width, height int) bool {
-	//if p.x > float64(width-2) {
-	//	fmt.Printf("oI: x=%v width=%v\n", p.x, width)
-	//}
-	// FIXME > or >= ?
-	if p.x < 0.0 || p.y < 0.0 || p.x > float64(width) || p.y > float64(height) {
-		return true
-	}
-	return false
+// From https://stackoverflow.com/questions/39544571/
+func round(x, unit float64) float64 {
+	return math.Round(x/unit) * unit
 }

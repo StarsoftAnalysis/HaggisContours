@@ -90,9 +90,15 @@ func pointWeightedAvg(img *image.NRGBA, out, in PointT, outPix, inPix int, thres
 		panic(fmt.Sprintf("pointWeightedAvg: points %v and %v shouldn't have the same pixel value (%v)", out, in, outPix))
 	}
 	proportion := float64(outPix-threshold) / float64(outPix-inPix)
-	avgX := float64(out.x) + float64(in.x-out.x)*proportion + 0.5
-	avgY := float64(out.y) + float64(in.y-out.y)*proportion + 0.5
-	//fmt.Printf("pWA: out=%v %v  in=%v %v  t=%v  prop=%v  avg=%.2f,%.2f\n", out, outPix, in, inPix, threshold, proportion, avgX, avgY)
+	//avgX := round(float64(out.x)+float64(in.x-out.x)*proportion+0.5, 0.01) // 0.01 chosen to avoid spurious -0.002's that keep appearing
+	//avgY := round(float64(out.y)+float64(in.y-out.y)*proportion+0.5, 0.01)
+	//avgX := float64(out.x) + float64(in.x-out.x)*proportion
+	//avgY := float64(out.y) + float64(in.y-out.y)*proportion
+	//avgX := float64(out.x) + float64(in.x-out.x)*proportion + 0.5
+	//avgY := float64(out.y) + float64(in.y-out.y)*proportion + 0.5
+	avgX := round(float64(out.x)+float64(in.x-out.x)*proportion+0.5, 0.01) // 0.01 chosen to avoid spurious -0.002's that keep appearing
+	avgY := round(float64(out.y)+float64(in.y-out.y)*proportion+0.5, 0.01)
+	fmt.Printf("pWA: out=%v %v  in=%v %v  t=%v  prop=%v  avg=%.3f,%.3f\n", out, outPix, in, inPix, threshold, proportion, avgX, avgY)
 	return Point64T{avgX, avgY}
 }
 
@@ -186,7 +192,7 @@ func contourFinder(imageData *image.NRGBA, width, height int, threshold int, svg
 				if !seen[x+y*width] && !skipping {
 					contour, moreSeen := traceContour(imageData, width, height, threshold, p, svgF)
 					contourCount += 1
-					ccontour := compressContour(contour)
+					ccontour := contour // FIXME temp removed: compressContour(contour)
 					contours = append(contours, ccontour)
 					// this could be a _lot_ more efficient
 					for _, p := range moreSeen {
