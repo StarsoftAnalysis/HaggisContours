@@ -94,11 +94,11 @@ func pointWeightedAvg(img *image.NRGBA, out, in PointT, outPix, inPix int, thres
 	//avgY := round(float64(out.y)+float64(in.y-out.y)*proportion+0.5, 0.01)
 	//avgX := float64(out.x) + float64(in.x-out.x)*proportion
 	//avgY := float64(out.y) + float64(in.y-out.y)*proportion
-	//avgX := float64(out.x) + float64(in.x-out.x)*proportion + 0.5
-	//avgY := float64(out.y) + float64(in.y-out.y)*proportion + 0.5
-	avgX := round(float64(out.x)+float64(in.x-out.x)*proportion+0.5, 0.01) // 0.01 chosen to avoid spurious -0.002's that keep appearing
-	avgY := round(float64(out.y)+float64(in.y-out.y)*proportion+0.5, 0.01)
-	fmt.Printf("pWA: out=%v %v  in=%v %v  t=%v  prop=%v  avg=%.3f,%.3f\n", out, outPix, in, inPix, threshold, proportion, avgX, avgY)
+	avgX := float64(out.x) + float64(in.x-out.x)*proportion + 0.5
+	avgY := float64(out.y) + float64(in.y-out.y)*proportion + 0.5
+	//avgX := round(float64(out.x)+float64(in.x-out.x)*proportion+0.5, 0.01) // 0.01 chosen to avoid spurious -0.002's that keep appearing
+	//avgY := round(float64(out.y)+float64(in.y-out.y)*proportion+0.5, 0.01)
+	//fmt.Printf("pWA: out=%v %v  in=%v %v  t=%v  prop=%v  avg=%.3f,%.3f\n", out, outPix, in, inPix, threshold, proportion, avgX, avgY)
 	return Point64T{avgX, avgY}
 }
 
@@ -207,9 +207,7 @@ func contourFinder(imageData *image.NRGBA, width, height int, threshold int, svg
 					//}
 					if svgF != nil {
 						// Single polygon -- assume the contour is closed
-						//svgF.polygon(ccontour, width)
-						// Or separate lines
-						svgF.polyline(ccontour, width, height)
+						svgF.plotContour(ccontour, width, height)
 					}
 				}
 				skipping = true

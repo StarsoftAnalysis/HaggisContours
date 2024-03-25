@@ -38,10 +38,11 @@ func (svg *SVGfile) line(fromX, fromY, toX, toY float64) {
 	svg.write(fmt.Sprintf("<path d=\"M %6.3f,%6.3f L %6.3f,%6.3f\" />\n", fromX, fromY, toX, toY))
 }
 
-func (svg *SVGfile) polygon(contour ContourT, width int) {
+func (svg *SVGfile) polygon(contour ContourT) {
 	// Single polygon -- assume the contour is closed
 	// e.g.  <polygon points="100,100 150,25 150,75 200,0" fill="none" stroke="black" />
 	//svg.write(fmt.Sprintf("<!-- contour: %v -->\n", contour))
+	fmt.Printf("polygon: %v\n", contour)
 	svg.write(fmt.Sprint("<polygon stroke-color=\"blue\" points=\""))
 	for _, p := range contour {
 		svg.write(fmt.Sprintf("%.2f,%.2f ", p.x, p.y))
@@ -108,47 +109,76 @@ func offImage(p Point64T, width, height int) bool {
 	return false
 }
 
-// Edge case (literally) -- line that starts and ends off-image -- see test11.png
+// Given a contour (a slice of coordinates), make them into a polyline
+func (svg *SVGfile) polyline(contour ContourT) {
+	fmt.Printf("polyline: %v\n", contour)
+	svg.write(fmt.Sprint("<polyline points=\""))
+	for _, p := range contour {
+		svg.write(fmt.Sprintf("%.2f,%.2f ", p.x, p.y))
+	}
+	svg.write(fmt.Sprint("\" />\n"))
+}
 
-func (svg *SVGfile) polyline(contour ContourT, width, height int) {
+// Polygon, or polyline if not closed
+func (svg *SVGfile) polyshape(contour ContourT) {
+	if contour[0].Equal(contour[len(contour)-1]) {
+		svg.polygon(contour[:len(contour)-1]) // leave off the last (repeated) point
+	} else {
+		svg.polyline(contour)
+	}
+}
+
+// Plot a contour onto the SVG file: as a polygon unless it goes off the
+// edge of the image, in which case it becomes one or more polylines.
+func (svg *SVGfile) plotContour(contour ContourT, width, height int) {
 	lineOpen := false
-	fmt.Printf("polyline: contour=%v\n", contour)
+	//fmt.Printf("polyline: contour=%v\n", contour)
+	var subContour ContourT // may not be the whole contour
 	for i, p := range contour {
 		if offImage(p, width, height) {
-			fmt.Printf("polyline: offImage at %v  lineOpen=%v\n", p, lineOpen)
+			//fmt.Printf("polyline: offImage at %v  lineOpen=%v\n", p, lineOpen)
 			if lineOpen {
 				// stop the line - end right at the edge(s)
 				edgeP := edgePoint(p, contour[i-1], width, height)
-				fmt.Printf("polyline: stopping c-1=%v  p=%v  w=%v  h=%v  edgeP=%v\n", contour[i-1], p, width, height, edgeP)
-				svg.write(fmt.Sprintf("%.2f,%.2f ", edgeP.x, edgeP.y))
-				svg.write("\" />\n")
+				//fmt.Printf("polyline: stopping c-1=%v  p=%v  w=%v  h=%v  edgeP=%v\n", contour[i-1], p, width, height, edgeP)
+				//svg.write(fmt.Sprintf("%.2f,%.2f ", edgeP.x, edgeP.y))
+				subContour = append(subContour, edgeP)
+				//svg.write("\" />\n")
+				svg.polyshape(subContour)
+				subContour = nil
 				lineOpen = false
 			} else {
-				fmt.Printf("polyline: skipping %v\n", p)
+				//fmt.Printf("polyline: skipping %v\n", p)
 				// line already closed -- skip the point
 				// But wait!  what if we've gone over a corner?  FIXME TODO
+				// Edge case (literally) -- line that starts and ends off-image -- see test11.png
 			}
 		} else {
-			fmt.Printf("polyline: on Image at %v  lineOpen=%v\n", p, lineOpen)
+			//fmt.Printf("polyline: on Image at %v  lineOpen=%v\n", p, lineOpen)
 			if !lineOpen {
 				// start a new line
-				svg.write("<polyline points=\"")
+				//svg.write("<polyline points=\"")
+				subContour = make(ContourT, 0, 10)
 				if i > 0 {
 					// Not the first point -- we've come back from off-image, so start on the edge
 					edgeP := edgePoint(contour[i-1], p, width, height)
-					fmt.Printf("polyline: starting at edgeP %v\n", edgeP)
-					svg.write(fmt.Sprintf("%.2f,%.2f ", edgeP.x, edgeP.y))
+					//fmt.Printf("polyline: starting at edgeP %v\n", edgeP)
+					//svg.write(fmt.Sprintf("%.2f,%.2f ", edgeP.x, edgeP.y))
+					subContour = append(subContour, edgeP)
 				}
 				lineOpen = true
 			}
-			fmt.Printf("polyline: adding %v\n", p)
-			svg.write(fmt.Sprintf("%.2f,%.2f ", p.x, p.y))
+			//fmt.Printf("polyline: adding %v\n", p)
+			//svg.write(fmt.Sprintf("%.2f,%.2f ", p.x, p.y))
+			subContour = append(subContour, p)
 		}
 	}
 	if lineOpen {
 		// stop the line
-		fmt.Printf("polyline: final close\n")
+		//fmt.Printf("polyline: final close\n")
 		svg.write("\" />\n")
+		svg.polyshape(subContour)
+		subContour = nil
 	}
 }
 
