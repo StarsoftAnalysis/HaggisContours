@@ -93,17 +93,7 @@ func edgePoint(outPoint, inPoint Point64T, width, height int) Point64T {
 // Because values have already been increased by 0.5 (in PointWeightedAvg()),
 // choose anything here that's within 1 pixel of the edge.
 func offImage(p Point64T, width, height int) bool {
-	//if p.x > float64(width-2) {
-	//	fmt.Printf("oI: x=%v width=%v\n", p.x, width)
-	//}
-	//epsilon := 0.0 // FIXME or 0.01 ?  or has the issue gone away by using round() in the average calc function
-	//if p.x < 0.0 || p.y < 0.0 || p.x > float64(width-1) || p.y > float64(height-1) {
-	//if p.x < 1.0 || p.y < 1.0 || p.x > float64(width-1) || p.y > float64(height-1) {
-	// FIXME arbitrary limit of 0.5 from the edge   NO! that doesn't work
-	//if p.x < 0.5 || p.y < 0.5 || p.x > float64(width)-0.5 || p.y > float64(height)-0.5 {
-	// try 0.9 -- or do the rounding in PWA
-	const limit = 0.0
-	if p.x < limit || p.y < limit || p.x > float64(width)-limit || p.y > float64(height)-limit {
+	if p.x < 0.0 || p.y < 0.0 || p.x > float64(width) || p.y > float64(height) {
 		return true
 	}
 	return false
@@ -141,9 +131,7 @@ func (svg *SVGfile) plotContour(contour ContourT, width, height int) {
 				// stop the line - end right at the edge(s)
 				edgeP := edgePoint(p, contour[i-1], width, height)
 				//fmt.Printf("polyline: stopping c-1=%v  p=%v  w=%v  h=%v  edgeP=%v\n", contour[i-1], p, width, height, edgeP)
-				//svg.write(fmt.Sprintf("%.2f,%.2f ", edgeP.x, edgeP.y))
 				subContour = append(subContour, edgeP)
-				//svg.write("\" />\n")
 				svg.polyshape(subContour)
 				subContour = nil
 				lineOpen = false
@@ -157,26 +145,22 @@ func (svg *SVGfile) plotContour(contour ContourT, width, height int) {
 			//fmt.Printf("polyline: on Image at %v  lineOpen=%v\n", p, lineOpen)
 			if !lineOpen {
 				// start a new line
-				//svg.write("<polyline points=\"")
 				subContour = make(ContourT, 0, 10)
 				if i > 0 {
 					// Not the first point -- we've come back from off-image, so start on the edge
 					edgeP := edgePoint(contour[i-1], p, width, height)
 					//fmt.Printf("polyline: starting at edgeP %v\n", edgeP)
-					//svg.write(fmt.Sprintf("%.2f,%.2f ", edgeP.x, edgeP.y))
 					subContour = append(subContour, edgeP)
 				}
 				lineOpen = true
 			}
 			//fmt.Printf("polyline: adding %v\n", p)
-			//svg.write(fmt.Sprintf("%.2f,%.2f ", p.x, p.y))
 			subContour = append(subContour, p)
 		}
 	}
 	if lineOpen {
 		// stop the line
 		//fmt.Printf("polyline: final close\n")
-		svg.write("\" />\n")
 		svg.polyshape(subContour)
 		subContour = nil
 	}

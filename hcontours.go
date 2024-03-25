@@ -84,21 +84,12 @@ func compressContour(c ContourT) ContourT {
 // The answer is shifted by 0.5 in each direction to account for
 // the fence-post error: we're moving from the centres of pixels to the edges.
 func pointWeightedAvg(img *image.NRGBA, out, in PointT, outPix, inPix int, threshold int) Point64T {
-	//outpix := getPix(img, out)
-	//inpix := getPix(img, in)
 	if outPix == inPix {
 		panic(fmt.Sprintf("pointWeightedAvg: points %v and %v shouldn't have the same pixel value (%v)", out, in, outPix))
 	}
 	proportion := float64(outPix-threshold) / float64(outPix-inPix)
-	//avgX := round(float64(out.x)+float64(in.x-out.x)*proportion+0.5, 0.01) // 0.01 chosen to avoid spurious -0.002's that keep appearing
-	//avgY := round(float64(out.y)+float64(in.y-out.y)*proportion+0.5, 0.01)
-	//avgX := float64(out.x) + float64(in.x-out.x)*proportion
-	//avgY := float64(out.y) + float64(in.y-out.y)*proportion
 	avgX := float64(out.x) + float64(in.x-out.x)*proportion + 0.5
 	avgY := float64(out.y) + float64(in.y-out.y)*proportion + 0.5
-	//avgX := round(float64(out.x)+float64(in.x-out.x)*proportion+0.5, 0.01) // 0.01 chosen to avoid spurious -0.002's that keep appearing
-	//avgY := round(float64(out.y)+float64(in.y-out.y)*proportion+0.5, 0.01)
-	//fmt.Printf("pWA: out=%v %v  in=%v %v  t=%v  prop=%v  avg=%.3f,%.3f\n", out, outPix, in, inPix, threshold, proportion, avgX, avgY)
 	return Point64T{avgX, avgY}
 }
 
@@ -180,7 +171,6 @@ func b2c(b bool) string {
 }
 
 func contourFinder(imageData *image.NRGBA, width, height int, threshold int, svgF *SVGfile) ContourS {
-	//var contours = make(ContourS, 0, 10)
 	seen := make([]bool, width*height)
 	skipping := false
 	contourCount := 0
@@ -198,15 +188,7 @@ func contourFinder(imageData *image.NRGBA, width, height int, threshold int, svg
 					for _, p := range moreSeen {
 						seen[p.x+p.y*width] = true
 					}
-					//fmt.Printf("eF: contour=%v  moreSeen=%v\n", contour, moreSeen)
-					//for j := 0; j < height; j++ {
-					//	for i := 0; i < width; i++ {
-					//		fmt.Printf("%s", b2c(seen[i+j*width]))
-					//	}
-					//	fmt.Println()
-					//}
 					if svgF != nil {
-						// Single polygon -- assume the contour is closed
 						svgF.plotContour(ccontour, width, height)
 					}
 				}
