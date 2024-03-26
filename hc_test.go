@@ -23,6 +23,34 @@ func TestTypes(t *testing.T) {
 	}
 }
 
+func TestPWA(t *testing.T) {
+	fmt.Println("TestPWA")
+	type testdataT struct {
+		outPt, inPt              PointT
+		outPix, inPix, threshold int
+		width, height            int
+		wanted                   Point64T
+	}
+	testdata := []testdataT{
+		// On-image points
+		{PointT{1, 0}, PointT{1, 1}, 200, 20, 80, 3, 3, Point64T{1.500, 1.167}},
+		{PointT{2, 1}, PointT{1, 1}, 200, 20, 80, 3, 3, Point64T{1.833, 1.500}},
+		{PointT{1, 2}, PointT{1, 1}, 200, 20, 80, 3, 3, Point64T{1.500, 1.833}},
+		{PointT{0, 1}, PointT{1, 1}, 200, 20, 80, 3, 3, Point64T{1.167, 1.500}},
+		// Edge points -- outPt is off the image
+		{PointT{0, -1}, PointT{0, 0}, 200, 20, 80, 2, 2, Point64T{0.5, -0.5}},
+		{PointT{2, 0}, PointT{1, 0}, 200, 20, 80, 2, 2, Point64T{2.5, 0.5}},
+		{PointT{1, 2}, PointT{1, 1}, 200, 20, 80, 2, 2, Point64T{1.5, 2.5}},
+		{PointT{-1, 1}, PointT{0, 1}, 200, 20, 80, 2, 2, Point64T{-0.5, 1.5}},
+	}
+	for i, td := range testdata {
+		got := pointWeightedAvg(td.outPt, td.inPt, td.outPix, td.inPix, td.threshold, td.width, td.height)
+		if !got.Equal(td.wanted) {
+			t.Errorf("Wrong result for %d:  out %v %v  in %v %v  t %v  wanted %v  got %v\n", i, td.outPt, td.outPix, td.inPt, td.inPix, td.threshold, td.wanted, got)
+		}
+	}
+}
+
 func TestTraceContour(t *testing.T) {
 	fmt.Println("TestTraceContour")
 

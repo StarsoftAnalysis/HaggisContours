@@ -19,13 +19,17 @@ const version = "0.1.0"
 
 // Get the pixel value (0..255) at the given coordinates in the image
 // Grey: Y = 0.299 R + 0.587 G + 0.114 B
+// FIXME use Pix or At ?
 func getPix(imageData *image.NRGBA, width, height int, p PointT) int {
 	if p.x < 0 || p.y < 0 || p.x >= width || p.y >= height {
+		//fmt.Printf("gP: p=%v  off edge, returning %v\n", p, white)
 		return white
 	}
-	pix := p.y*imageData.Stride + p.x*4
-	//fmt.Printf("gP: p=%v  stride=%v  pix=%v\n", p, imageData.Stride, pix)
-	return int(math.Round(0.299*float64(imageData.Pix[pix]) + 0.587*float64(imageData.Pix[pix+1]) + 0.114*float64(imageData.Pix[pix+2])))
+	pixIndex := p.y*imageData.Stride + p.x*4
+	//at := imageData.At(p.x, p.y)
+	pixVal := int(math.Round(0.299*float64(imageData.Pix[pixIndex]) + 0.587*float64(imageData.Pix[pixIndex+1]) + 0.114*float64(imageData.Pix[pixIndex+2])))
+	//fmt.Printf("gP: p=%v  len(Pix)=%v stride=%v  pixIndex=%v  pixVal=%v  at=%v\n", p, len(imageData.Pix), imageData.Stride, pixIndex, pixVal, at)
+	return pixVal
 }
 
 // Calculate the angle from p1 to p2, in radians widdershins.
@@ -77,20 +81,57 @@ func compressContour(c ContourT) ContourT {
 	return cc
 }
 
+// Return the sign of a-b, as a float
+func sign(a, b int) float64 {
+	if a < b {
+		return -1
+	}
+	return +1
+}
+
 // Calculate the weighted average between points 'out' and 'in',
 // based on where the threshold lies between the two pixel values.
 // We expect the out pixel to have a higher value (i.e. be lighter)
-// than the in pixel.
+// than the in pixel, and the threshold to be in the range [inPix, outPix].
 // The answer is shifted by 0.5 in each direction to account for
 // the fence-post error: we're moving from the centres of pixels to the edges.
-func pointWeightedAvg(img *image.NRGBA, out, in PointT, outPix, inPix int, threshold int) Point64T {
-	if outPix == inPix {
-		panic(fmt.Sprintf("pointWeightedAvg: points %v and %v shouldn't have the same pixel value (%v)", out, in, outPix))
+func pointWeightedAvg(out, in PointT, outPix, inPix, threshold int, width, height int) Point64T {
+	if outPix == inPix || outPix < threshold || threshold < inPix {
+		panic(fmt.Sprintf("pointWeightedAvg: invalid values for outPix (%v), threshold (%v), and inPix (%v)\n", outPix, threshold, inPix))
 	}
 	proportion := float64(outPix-threshold) / float64(outPix-inPix)
-	avgX := float64(out.x) + float64(in.x-out.x)*proportion + 0.5
-	avgY := float64(out.y) + float64(in.y-out.y)*proportion + 0.5
-	return Point64T{avgX, avgY}
+	var pwa Point64T
+	// Fiddle with sign so that proportion always goes in direction from out to in
+	//pwa.x = float64(out.x) + math.Abs(float64(in.x-out.x))*float64(sign(in.x, out.x))*proportion // + 0.5
+	/*
+			xproportion := proportion
+			if out.x > in.x {
+				xproportion = 1 - xproportion
+			}
+			yproportion := proportion
+			if out.y > in.y {
+				yproportion = 1 - yproportion
+			}
+		//pwa.x = float64(out.x) + math.Abs(float64(in.x-out.x))*xproportion + 0.5
+		//pwa.y = float64(out.y) + math.Abs(float64(in.y-out.y))*yproportion + 0.5
+	*/
+	// Have to deal with edges separately:
+	if out.x < 0 {
+		pwa.x = -0.5
+	} else if out.x >= width {
+		pwa.x = float64(width) + 0.5
+	} else {
+		pwa.x = float64(out.x) + float64(in.x-out.x)*proportion + 0.5
+	}
+	if out.y < 0 {
+		pwa.y = -0.5
+	} else if out.y >= height {
+		pwa.y = float64(height) + 0.5
+	} else {
+		pwa.y = float64(out.y) + float64(in.y-out.y)*proportion + 0.5
+	}
+	//fmt.Printf("pWA: out=%v in=%v  outPix=%v threshold=%v inPix=%v  wd/ht=%v/%v  prop=%v  returning %v\n", out, in, outPix, threshold, inPix, width, height, proportion, pwa)
+	return pwa
 }
 
 // Contour-finding strategy:
@@ -111,7 +152,7 @@ func traceContour(imageData *image.NRGBA, width, height int, threshold int, star
 	out := in.Backstep(direction)        // one step back -- gives pixel outside the shape
 	inPix := getPix(imageData, width, height, in)
 	outPix := getPix(imageData, width, height, out)
-	contour = append(contour, pointWeightedAvg(imageData, out, in, outPix, inPix, threshold))
+	contour = append(contour, pointWeightedAvg(out, in, outPix, inPix, threshold, width, height))
 	direction.TurnLeft()
 	startDir := direction // The direction we'll be facing when the contour is complete
 	//fmt.Printf("\ntE: start=%v startDir=%v   in=%v inPix=%v  out=%v outPix=%v  contour=%v\n", start, startDir, in, inPix, out, outPix, contour)
@@ -150,9 +191,8 @@ func traceContour(imageData *image.NRGBA, width, height int, threshold int, star
 			//fmt.Printf("tE: straight on: now in=%v inPix=%v  out=%v outPix=%v  dir=%v\n", in, inPix, out, outPix, direction)
 		}
 
-		// OPTION: add the point to the contour here to include the last point again.
-		// Add point to the contour
-		contour = append(contour, pointWeightedAvg(imageData, out, in, outPix, inPix, threshold))
+		// Add point to the contour (including the repeated point that closes the loop)
+		contour = append(contour, pointWeightedAvg(out, in, outPix, inPix, threshold, width, height))
 		// Break if back at beginning
 		//fmt.Printf("tE: break?  in=%v start=%v   dir=%v startDir=%v\n", in, start, direction, startDir)
 		if in.Equal(start) && direction == startDir {
@@ -199,6 +239,8 @@ func contourFinder(imageData *image.NRGBA, width, height int, threshold int, svg
 		}
 	}
 	// contours are really only returned for test cases
+	// FIXME some contours may not have generated an SVG e.g. heightmap1
+	//  could return a value from plotContour
 	return contours
 }
 
