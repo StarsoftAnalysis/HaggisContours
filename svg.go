@@ -113,6 +113,7 @@ func (svg *SVGfile) polyline(contour ContourT) {
 
 // Polygon, or polyline if not closed
 func (svg *SVGfile) polyshape(contour ContourT) {
+	contour.Compress()
 	if contour[0].Equal(contour[len(contour)-1]) {
 		svg.polygon(contour[:len(contour)-1]) // leave off the last (repeated) point
 	} else {
@@ -209,10 +210,10 @@ func (svg *SVGfile) openStart(filename string, opts OptsT) {
 	const maxScale = 8.0
 	scale = min(scale, maxScale)
 	// Testing only: add arrows to lines  From https://developer.mozilla.org/en-US/docs/Web/SVG/Element/marker
-	marker := " <defs> <!-- A marker to be used as an arrowhead --> <marker id=\"arrow\" viewBox=\"0 0 10 10\" refX=\"5\" refY=\"5\" markerWidth=\"6\" markerHeight=\"6\" orient=\"auto-start-reverse\"> <path d=\"M 0 0 L 10 5 L 0 10 z\" /> </marker> </defs>"
-	svg.write(marker)
-	// NOTE marker-end is for dev only
-	g := fmt.Sprintf("<g stroke=\"black\" stroke-width=\"0.1mm\" stroke-linecap=\"round\" stroke-linejoin=\"round\" fill=\"none\" xmarker-end=\"url(#arrow)\" transform=\"translate(%g,%g) scale(%.3f)\">\n",
+	//marker := " <defs> <!-- A marker to be used as an arrowhead --> <marker id=\"arrow\" viewBox=\"0 0 10 10\" refX=\"5\" refY=\"5\" markerWidth=\"6\" markerHeight=\"6\" orient=\"auto-start-reverse\"> <path d=\"M 0 0 L 10 5 L 0 10 z\" /> </marker> </defs>"
+	//svg.write(marker)
+	// add this to the <g stroke... group if required:    marker-end=\"url(#arrow)\"
+	g := fmt.Sprintf("<g stroke=\"black\" stroke-width=\"0.1mm\" stroke-linecap=\"round\" stroke-linejoin=\"round\" fill=\"none\" transform=\"translate(%g,%g) scale(%.3f)\">\n",
 		translateX, translateY, scale,
 	)
 	svg.write(g)

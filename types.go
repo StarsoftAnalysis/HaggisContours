@@ -58,6 +58,11 @@ func (p1 Point64T) Equal(p2 Point64T) bool {
 	return math.Abs(p1.x-p2.x) < 0.001 && math.Abs(p1.y-p2.y) < 0.001
 }
 
+// Calculate the angle from p1 to p2, in radians widdershins.
+func (p1 Point64T) RelAngle(p2 Point64T) float64 {
+	return math.Atan2(float64(p2.y-p1.y), float64(p2.x-p1.x))
+}
+
 type ContourT []Point64T
 
 func (c1 ContourT) Equal(c2 ContourT) bool {
@@ -77,6 +82,48 @@ func (c ContourT) String() string {
 		s[i] = fmt.Sprintf("%v", p)
 	}
 	return "{" + strings.Join(s, ", ") + "}"
+}
+
+// Simplify contour by combining consecutive moves in the same direction.
+func (cptr *ContourT) Compress() {
+	c := *cptr
+	lenc := len(c)
+	if lenc < 3 {
+		return
+	}
+	var cc = make(ContourT, 0, lenc/2) // optimistic guess on the amount of compression
+	p1 := c[0]
+	cc = append(cc, p1)
+	i := 1
+	p2 := c[i]
+	p3 := c[i+1]
+	dir1 := p1.RelAngle(p2) // calculate angle from one point to the next
+	for i < lenc-1 {
+		if p2.Equal(p1) {
+			// drop non-moves
+		} else {
+			dir2 := p2.RelAngle(p3)
+			if sameAngle(dir1, dir2) {
+				// do nothing: p1 and dir1 stay the same
+			} else {
+				// new direction -- add the point to the compressed array
+				cc = append(cc, p2)
+				p1 = p2
+				dir1 = dir2
+			}
+		}
+		i += 1
+		p2 = p3
+		if i+1 < lenc {
+			p3 = c[i+1]
+		}
+	}
+	// need to add the last move
+	cc = append(cc, c[i])
+	fmt.Printf("cC: reduced len from %d to %d\n", lenc, len(cc))
+	//return cc
+	*cptr = cc
+	return
 }
 
 type ContourS []ContourT

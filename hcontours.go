@@ -32,63 +32,6 @@ func getPix(imageData *image.NRGBA, width, height int, p PointT) int {
 	return pixVal
 }
 
-// Calculate the angle from p1 to p2, in radians widdershins.
-func relAngle(p1, p2 Point64T) float64 {
-	return math.Atan2(float64(p2.y-p1.y), float64(p2.x-p1.x))
-}
-
-// Return true if the two angles (in radians) are close enough
-func sameAngle(a1, a2 float64) bool {
-	// FIXME should do mod(2pi)?
-	return math.Abs(a1-a2) < 0.01
-}
-
-// Simplify contour by combining consecutive moves in the same direction.
-func compressContour(c ContourT) ContourT {
-	if len(c) < 3 {
-		return c
-	}
-	var cc = make(ContourT, 0, len(c)/2) // optimistic guess on the amount of compression
-	p1 := c[0]
-	cc = append(cc, p1)
-	i := 1
-	p2 := c[i]
-	p3 := c[i+1]
-	dir1 := relAngle(p1, p2) // calculate angle from one point to the next
-	for i < len(c)-1 {
-		if p2.Equal(p1) {
-			// drop non-moves
-		} else {
-			dir2 := relAngle(p2, p3)
-			if sameAngle(dir1, dir2) {
-				// do nothing: p1 and dir1 stay the same
-			} else {
-				// new direction -- add the point to the compressed array
-				cc = append(cc, p2)
-				p1 = p2
-				dir1 = dir2
-			}
-		}
-		i += 1
-		p2 = p3
-		if i+1 < len(c) {
-			p3 = c[i+1]
-		}
-	}
-	// need to add the last move
-	cc = append(cc, c[i])
-	//fmt.Printf("cC: reduced len from %d to %d\n", len(c), len(cc))
-	return cc
-}
-
-// Return the sign of a-b, as a float
-func sign(a, b int) float64 {
-	if a < b {
-		return -1
-	}
-	return +1
-}
-
 // Calculate the weighted average between points 'out' and 'in',
 // based on where the threshold lies between the two pixel values.
 // We expect the out pixel to have a higher value (i.e. be lighter)
@@ -222,14 +165,13 @@ func contourFinder(imageData *image.NRGBA, width, height int, threshold int, svg
 				if !seen[x+y*width] && !skipping {
 					contour, moreSeen := traceContour(imageData, width, height, threshold, p, svgF)
 					contourCount += 1
-					ccontour := contour // FIXME temp removed: compressContour(contour)
-					contours = append(contours, ccontour)
+					contours = append(contours, contour)
 					// this could be a _lot_ more efficient
 					for _, p := range moreSeen {
 						seen[p.x+p.y*width] = true
 					}
 					if svgF != nil {
-						svgF.plotContour(ccontour, width, height)
+						svgF.plotContour(contour, width, height)
 					}
 				}
 				skipping = true

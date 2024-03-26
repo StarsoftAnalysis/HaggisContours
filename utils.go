@@ -112,3 +112,9 @@ func intsToString(ints []int) string {
 func round(x, unit float64) float64 {
 	return math.Round(x/unit) * unit
 }
+
+// Return true if the two angles (in radians) are close enough
+func sameAngle(a1, a2 float64) bool {
+	// FIXME should do mod(2pi)?
+	return math.Abs(a1-a2) < 0.01
+}
