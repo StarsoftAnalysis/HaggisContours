@@ -113,11 +113,11 @@ func (svg *SVGfile) polyline(contour ContourT) {
 
 // Polygon, or polyline if not closed
 func (svg *SVGfile) polyshape(contour ContourT) {
-	contour.Compress()
-	if contour[0].Equal(contour[len(contour)-1]) {
-		svg.polygon(contour[:len(contour)-1]) // leave off the last (repeated) point
+	ccontour := contour.Compress()
+	if ccontour[0].Equal(ccontour[len(ccontour)-1]) {
+		svg.polygon(ccontour[:len(ccontour)-1]) // leave off the last (repeated) point
 	} else {
-		svg.polyline(contour)
+		svg.polyline(ccontour)
 	}
 }
 

@@ -85,11 +85,10 @@ func (c ContourT) String() string {
 }
 
 // Simplify contour by combining consecutive moves in the same direction.
-func (cptr *ContourT) Compress() {
-	c := *cptr
+func (c ContourT) Compress() ContourT {
 	lenc := len(c)
 	if lenc < 3 {
-		return
+		return c
 	}
 	var cc = make(ContourT, 0, lenc/2) // optimistic guess on the amount of compression
 	p1 := c[0]
@@ -118,12 +117,9 @@ func (cptr *ContourT) Compress() {
 			p3 = c[i+1]
 		}
 	}
-	// need to add the last move
-	cc = append(cc, c[i])
-	fmt.Printf("cC: reduced len from %d to %d\n", lenc, len(cc))
-	//return cc
-	*cptr = cc
-	return
+	cc = append(cc, c[i]) // don't forget the last point
+	//fmt.Printf("cC: reduced len from %d to %d\n", lenc, len(cc))
+	return cc
 }
 
 type ContourS []ContourT
