@@ -118,3 +118,10 @@ func sameAngle(a1, a2 float64) bool {
 	// FIXME should do mod(2pi)?
 	return math.Abs(a1-a2) < 0.01
 }
+
+func mmOrInch(val, limit float64) float64 {
+	if val > limit {
+		return val
+	}
+	return val * 25.4
+}

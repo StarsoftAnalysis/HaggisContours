@@ -132,6 +132,18 @@ func (cs ContourS) String() string {
 	return "{" + strings.Join(s, ", ") + "}"
 }
 
+type PaperSizeT struct {
+	width  float64
+	height float64
+}
+
+var paperSizes = map[string]PaperSizeT{
+	"A4L": PaperSizeT{width: 297, height: 210},
+	"A4P": PaperSizeT{width: 210, height: 297},
+	"A3L": PaperSizeT{width: 420, height: 297},
+	"A3P": PaperSizeT{width: 297, height: 420},
+}
+
 // Options and derived things
 type OptsT struct {
 	infile     string
@@ -140,6 +152,7 @@ type OptsT struct {
 	thresholds []int
 	margin     float64
 	paper      string
+	paperSize  PaperSizeT
 	frame      bool
 	image      bool
 }

@@ -10,18 +10,6 @@ import (
 	"path"
 )
 
-type paperSize struct {
-	width  float64
-	height float64
-}
-
-var paperSizes = map[string]paperSize{
-	"A4L": paperSize{width: 297, height: 210},
-	"A4P": paperSize{width: 210, height: 297},
-	"A3L": paperSize{width: 420, height: 297},
-	"A3P": paperSize{width: 297, height: 420},
-}
-
 type SVGfile struct {
 	currentLayer int
 	file         *os.File
@@ -179,19 +167,19 @@ func (svg *SVGfile) openStart(filename string, opts OptsT) {
 	}
 	svg.file = fh
 	// write the wrapper SVG with  background colour first
-	viewbox := fmt.Sprintf("viewBox=\"0 0 %g %g\"", paperSizes[opts.paper].width, paperSizes[opts.paper].height)
+	viewbox := fmt.Sprintf("viewBox=\"0 0 %g %g\"", opts.paperSize.width, opts.paperSize.height)
 	// Set background via style rather than filling an oversized rect (which upsets Axidraw)
 	// (The style seems to be ignored by gThumb)
 	bg := fmt.Sprintf("style=\"background-color:%s\"", "white")
 	xmlns := "xmlns=\"http://www.w3.org/2000/svg\" xmlns:inkscape=\"http://www.inkscape.org/namespaces/inkscape\""
 	svgAttribute := fmt.Sprintf("<svg width=\"%gmm\" height=\"%gmm\" %s %s %s encoding=\"UTF-8\" >\n",
-		paperSizes[opts.paper].width, paperSizes[opts.paper].height, viewbox, bg, xmlns)
+		opts.paperSize.width, opts.paperSize.height, viewbox, bg, xmlns)
 	svg.write(svgAttribute)
 
 	// Apply translation and scale to whole plot: but don't magnify too much
 	//g := fmt.Sprintf("<g transform=\"translate(%g,%g) scale(%g)\" stroke=\"black\" stroke-width=\"1\" stroke-linecap=\"round\" stroke-linejoin=\"round\" fill=\"none\">\n",
-	printWidth := paperSizes[opts.paper].width - 2*opts.margin
-	printHeight := paperSizes[opts.paper].height - 2*opts.margin
+	printWidth := opts.paperSize.width - 2*opts.margin
+	printHeight := opts.paperSize.height - 2*opts.margin
 	imageAspect := float64(opts.width) / float64(opts.height)
 	printAspect := printWidth / printHeight
 	//fmt.Printf("print %g x %g  img %d x %d   pA %g   iA  %g\n", printWidth, printHeight, opts.width, opts.height, printAspect, imageAspect)
@@ -200,11 +188,11 @@ func (svg *SVGfile) openStart(filename string, opts OptsT) {
 		scale = printWidth / float64(opts.width)
 		//fmt.Println("scaling width")
 		translateX = opts.margin
-		translateY = (paperSizes[opts.paper].height - float64(opts.height)*scale) / 2
+		translateY = (opts.paperSize.height - float64(opts.height)*scale) / 2
 	} else {
 		scale = printHeight / float64(opts.height)
 		//fmt.Println("scaling height")
-		translateX = (paperSizes[opts.paper].width - float64(opts.width)*scale) / 2
+		translateX = (opts.paperSize.width - float64(opts.width)*scale) / 2
 		translateY = opts.margin
 	}
 	const maxScale = 8.0

@@ -10,6 +10,7 @@ import (
 	"math"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"github.com/spf13/pflag"
@@ -186,7 +187,42 @@ func contourFinder(imageData *image.NRGBA, width, height int, threshold int, svg
 	return contours
 }
 
-func parseArgs(args []string) OptsT {
+func parsePaperSize(opts *OptsT) bool {
+	valid := true
+	ps := strings.ToUpper((*opts).paper)
+	dims := strings.Split(ps, "X")
+	fmt.Printf("pPS: ps=%v dims=%v\n", ps, dims)
+	if len(dims) == 1 {
+		// no 'X' -- should be a standard size
+		size, ok := paperSizes[ps]
+		if !ok {
+			valid = false
+		} else {
+			opts.paperSize = size
+		}
+	} else if len(dims) == 2 {
+		// something like 123x45   TODO trap errors
+		paperWidth, err := strconv.ParseFloat(dims[0], 64)
+		paperHeight, err := strconv.ParseFloat(dims[1], 64)
+		fmt.Printf("pps: pW=%v pH=%v err=%v\n", paperWidth, paperHeight, err)
+		if err != nil {
+			valid = false
+		} else {
+			paperWidth = mmOrInch(paperWidth, 30)
+			paperHeight = mmOrInch(paperHeight, 30)
+			(*opts).paperSize = PaperSizeT{width: paperWidth, height: paperHeight}
+		}
+	} else {
+		// too many X's
+		valid = false
+	}
+	if !valid {
+		fmt.Printf("Can't make head nor tail of paper size '%s'\n", opts.paper)
+	}
+	return valid
+}
+
+func parseArgs(args []string) (OptsT, bool) {
 	var opts OptsT
 	pf := pflag.NewFlagSet("contours", pflag.ExitOnError)
 	pf.Float64VarP(&opts.margin, "margin", "m", 15, "Minimum margin (in mm).")
@@ -200,12 +236,21 @@ func parseArgs(args []string) OptsT {
 	} else {
 		pf.Parse(args) // args passed as a string (for testing)
 	}
+	ok := true
 	if pf.NArg() < 1 {
 		fmt.Println("No input file name given")
-		os.Exit(1)
+		ok = false
 	}
 	opts.infile = pf.Arg(0)
-	return opts
+	ok = ok && parsePaperSize(&opts)
+	if ok {
+		opts.margin = mmOrInch(opts.margin, 2)
+		if opts.paperSize.width < opts.margin*3 || opts.paperSize.height < opts.margin*3 {
+			fmt.Printf("Margin %g mm is too big for paper size %g x %g mm\n", opts.margin, opts.paperSize.width, opts.paperSize.height)
+			ok = false
+		}
+	}
+	return opts, ok
 }
 
 func createSVG(opts OptsT) string {
@@ -225,7 +270,7 @@ func createSVG(opts OptsT) string {
 	if opts.image {
 		imageString = "I"
 	}
-	optString := fmt.Sprintf("-hc-t%sm%g%s%s%s", intsToString(opts.thresholds), opts.margin, opts.paper, frameString, imageString)
+	optString := fmt.Sprintf("-hc-t%sm%gp%s%s%s", intsToString(opts.thresholds), opts.margin, opts.paper, frameString, imageString)
 	ext := filepath.Ext(opts.infile)
 	svgFilename := strings.TrimSuffix(opts.infile, ext) + optString + ".svg"
 	svgF.openStart(svgFilename, opts)
@@ -239,8 +284,12 @@ func createSVG(opts OptsT) string {
 }
 
 func main() {
-	opts := parseArgs(nil)
+	opts, ok := parseArgs(nil)
+	if !ok {
+		os.Exit(1)
+	}
 	fmt.Printf("hcontours: processing '%s'\n", opts.infile)
+	//fmt.Printf("\t%+v\n", opts)
 	//fmt.Printf("options: %#v\n", opts)
 	_ = createSVG(opts)
 }

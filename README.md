@@ -31,27 +31,33 @@ the values used for the threshold, margin, and paper options -- in this case, th
 
 * `--threshold | -t <value[,...]>`
 Specify one or more threshold values, separated by commas, each in the range 0..255.  These are the pixel
-values that are used to find the contours.  Default `128`. Examples: `-t 99` `-threshold 32,64,96,128,160,192,224`
+values that are used to find the contours.  Default `128`. Examples: `-t 99` `--threshold 32,64,96,128,160,192,224`
 
 * `--margin | -m <width>`
-Define the minimum width, in mm, of the margin around the created image.  Default 15.  Example: `-m 10`
+Define the minimum width of the margin around the created image.  
+The value is interpreted as millimetres if greater than 2, otherwise as inches.
+Default 15 (mm).  Examples: `-m 10` (mm) `--margin 1.5` (inches)
 
 * `--paper | -p <papersize>`
-Choose the paper size to use.  One of A4L, A4P, A3L, or A3P.  Default A4L. Example: `-p A3L`
+Choose the paper size to use, either one of the pre-defined sizes (A4L, A4P, A3L, or A3P),
+or a custom size in the format `<width>x<height>`.  Width and height are interpreted as millimetres
+if the value is greater than 30, otherwise as inches.  
+Default A4L. Examples: `-p A3L` `--paper 200x300` (mm) `-p 7x5` (inches)
 
 * `--frame | -f`
+Draw a simple frame around the SVG image.  Default false. Example `-f`
 
 * `--image | -i`
 Use the original image as a background in the SVG image.  Default false. Example: `--image`
 
 ## Examples
 
-`hcontours beach.png -t 32,64,96,128,160,192,224` produces this:
+`hcontours examples/beach.png -t 32,64,96,128,160,192,224 --paper A4L --image` produces this:
 
-<img alt="Photo of breakwaters on a beach" src="examples/beach.png" title="Input image" width=45%> <img alt="The same photo after processing, showing as the outlines of shapes" src="examples/beach-hc-t32,64,96,128,160,192,224m15A4L.svg" title="Created SVG image" width=45%>
+<img alt="Photo of breakwaters on a beach" src="examples/beach.png" title="Input image" width=45%>&nbsp;&nbsp;&nbsp;&nbsp;<img alt="The same photo after processing, showing as the outlines of shapes" src="examples/beach-hc-t32,64,96,128,160,192,224m15pA4LI.svg" title="Created SVG image" width=45%>
 
 
-`hcontours Heightmap.png -t 32,64,96,128,160,192,224` produces this:
+`hcontours examples/Heightmap.png -t 64,128,192 --paper 200x200 --margin 0 --frame` produces this:
 
-<img alt="Sample heightmap, taken from Wikipedia, shown as a greyscale image" src="examples/Heightmap.png" title="Input image" width=45%> <img alt="The contours generated from the heightmap" src="examples/Heightmap-hc-t32,64,96,128,160,192,224m15A4L.svg" title="Created SVG image" width=45%>
+<img alt="Sample heightmap, taken from Wikipedia, shown as a greyscale image" src="examples/Heightmap.png" title="Input image" width=45%>&nbsp;&nbsp;&nbsp;&nbsp;<img alt="The contours generated from the heightmap" src="examples/Heightmap-hc-t64,128,192m0p200x200F.svg" title="Created SVG image" width=45%>
 
