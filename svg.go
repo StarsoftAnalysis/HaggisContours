@@ -221,8 +221,8 @@ func (svg *SVGfile) openStart(filename string, opts OptsT) {
 		frame := fmt.Sprintf("<rect width=\"%d\" height=\"%d\" />\n", opts.width, opts.height)
 		//fmt.Print(frame)
 		svg.write(frame)
-
-		// TEMP -- shove the image in too
+	}
+	if opts.image {
 		image := fmt.Sprintf("<image href=\"%s\" width=\"%d\" height=\"%d\" />\n", path.Base(opts.infile), opts.width, opts.height)
 		//fmt.Print(image)
 		svg.write(image)

@@ -40,7 +40,9 @@ Define the minimum width, in mm, of the margin around the created image.  Defaul
 Choose the paper size to use.  One of A4L, A4P, A3L, or A3P.  Default A4L. Example: `-p A3L`
 
 * `--frame | -f`
-Use this option to draw a simple frame around the image.  Default false. Example: `-f`
+
+* `--image | -i`
+Use the original image as a background in the SVG image.  Default false. Example: `--image`
 
 ## Examples
 

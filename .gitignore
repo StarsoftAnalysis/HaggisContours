@@ -1,4 +1,5 @@
 tests/*.svg
+tests/.comments/
 *~
 TODO.md
 # binary:

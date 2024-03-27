@@ -141,6 +141,7 @@ type OptsT struct {
 	margin     float64
 	paper      string
 	frame      bool
+	image      bool
 }
 
 const white = 0xff

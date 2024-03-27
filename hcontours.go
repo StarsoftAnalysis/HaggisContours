@@ -193,6 +193,7 @@ func parseArgs(args []string) OptsT {
 	pf.StringVarP(&opts.paper, "paper", "p", "A4L", "Paper size and orientation.  A4L | A4P | A3L | A3P.")
 	pf.IntSliceVarP(&opts.thresholds, "threshold", "t", []int{128}, "Threshold levels, each 0..255")
 	pf.BoolVarP(&opts.frame, "frame", "f", false, "Draw a frame around the SVG image")
+	pf.BoolVarP(&opts.image, "image", "i", false, "Use the original image as a background in the SVG image")
 	pf.SortFlags = false
 	if args == nil {
 		pf.Parse(os.Args[1:]) // don't pass program name
@@ -220,7 +221,11 @@ func createSVG(opts OptsT) string {
 	if opts.frame {
 		frameString = "F"
 	}
-	optString := fmt.Sprintf("-hc-t%sm%g%s%s", intsToString(opts.thresholds), opts.margin, opts.paper, frameString)
+	imageString := ""
+	if opts.image {
+		imageString = "I"
+	}
+	optString := fmt.Sprintf("-hc-t%sm%g%s%s%s", intsToString(opts.thresholds), opts.margin, opts.paper, frameString, imageString)
 	ext := filepath.Ext(opts.infile)
 	svgFilename := strings.TrimSuffix(opts.infile, ext) + optString + ".svg"
 	svgF.openStart(svgFilename, opts)
