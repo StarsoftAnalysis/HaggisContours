@@ -10,7 +10,7 @@ It uses a simple algorithm, based on the behaviour of wild haggis on the mountai
 dextrous wild haggis have their left legs longer than their right legs, which makes it easy for them to run clockwise
 around hillsides to escape predators.  Obviously the opposite applies to the sinistrous sub-species, which don't.
 
-The code provided here takes an PNG file as input, and converts each pixel to a value between 0 (black) and 255 (white).  Threshold values
+The code provided here takes an image file (PNG, JPEG, or GIF) as input, and converts each pixel to a value between 0 (black) and 255 (white).  Threshold values
 for contours can have any value from 0 to 255.  Output is in the form of a simple SVG file.
 
 ## Status

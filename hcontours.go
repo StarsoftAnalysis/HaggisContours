@@ -45,32 +45,19 @@ func pointWeightedAvg(out, in PointT, outPix, inPix, threshold int, width, heigh
 	}
 	proportion := float64(outPix-threshold) / float64(outPix-inPix)
 	var pwa Point64T
-	// Fiddle with sign so that proportion always goes in direction from out to in
-	//pwa.x = float64(out.x) + math.Abs(float64(in.x-out.x))*float64(sign(in.x, out.x))*proportion // + 0.5
-	/*
-			xproportion := proportion
-			if out.x > in.x {
-				xproportion = 1 - xproportion
-			}
-			yproportion := proportion
-			if out.y > in.y {
-				yproportion = 1 - yproportion
-			}
-		//pwa.x = float64(out.x) + math.Abs(float64(in.x-out.x))*xproportion + 0.5
-		//pwa.y = float64(out.y) + math.Abs(float64(in.y-out.y))*yproportion + 0.5
-	*/
-	// Have to deal with edges separately:
+	// Have to deal with edges separately: make the average slightly off-image
+	const slightly = 0.001
 	if out.x < 0 {
-		pwa.x = -0.5
+		pwa.x = -slightly
 	} else if out.x >= width {
-		pwa.x = float64(width) + 0.5
+		pwa.x = float64(width) + slightly
 	} else {
 		pwa.x = float64(out.x) + float64(in.x-out.x)*proportion + 0.5
 	}
 	if out.y < 0 {
-		pwa.y = -0.5
+		pwa.y = -slightly
 	} else if out.y >= height {
-		pwa.y = float64(height) + 0.5
+		pwa.y = float64(height) + slightly
 	} else {
 		pwa.y = float64(out.y) + float64(in.y-out.y)*proportion + 0.5
 	}

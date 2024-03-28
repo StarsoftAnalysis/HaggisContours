@@ -31,7 +31,7 @@ func (svg *SVGfile) polygon(contour ContourT) {
 	// e.g.  <polygon points="100,100 150,25 150,75 200,0" fill="none" stroke="black" />
 	//svg.write(fmt.Sprintf("<!-- contour: %v -->\n", contour))
 	//fmt.Printf("polygon: %v\n", contour)
-	svg.write(fmt.Sprint("<polygon stroke-color=\"blue\" points=\""))
+	svg.write(fmt.Sprint("<polygon points=\""))
 	for _, p := range contour {
 		svg.write(fmt.Sprintf("%.2f,%.2f ", p.x, p.y))
 	}
@@ -81,6 +81,7 @@ func edgePoint(outPoint, inPoint Point64T, width, height int) Point64T {
 // Because values have already been increased by 0.5 (in PointWeightedAvg()),
 // choose anything here that's within 1 pixel of the edge.
 // FIXME move this -- it's not an SVG thing
+// FIXME limit is now 0.0
 func offImage(p Point64T, width, height int) bool {
 	const limit = 0.0 //1.0
 	if p.x < limit || p.y < limit || p.x > float64(width)-limit || p.y > float64(height)-limit {
