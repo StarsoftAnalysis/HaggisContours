@@ -2,7 +2,7 @@
 
 A method of converting a heightmap (or similar input) to a set of contours, using the wild haggis algorithm.
 
-![Go workflow](https://github.com/starsoftanalysis/haggiscontours/actions/workflows/go.yml/badge.svg)
+![Go workflow](https://github.com/starsoftanalysis/HaggisContours/actions/workflows/go.yml/badge.svg)
 
 This is a Go programme for extacting contours from a [heightmap](https://en.wikipedia.org/wiki/Heightmap), or from a similar data source such as an image.
 
@@ -18,13 +18,13 @@ for contours can have any value from 0 to 255.  Output is in the form of a simpl
 The algorithm came to me while working on a version of [Ben Foxall's Moore-Neighbourhood contour finder](https://github.com/benfoxall/contours).
 
 In fact an important part of the method -- using an array of 'seen' flags to avoid reworking contours that have
-been found already -- come's straight from Foxall's code.
+been found already -- comes straight from Foxall's code.
 
 ## Usage
 
     $ hcontours thingy.png
 
-will create a file called thingy-hc-t128m15A4L.svg.  The numbers in the output SVG file name indicate
+will create a file called thingy-hc-t128m15pA4L.svg.  The numbers in the output SVG file name indicate
 the values used for the threshold, margin, and paper options -- in this case, the default values.
 
 ### Options

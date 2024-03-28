@@ -188,6 +188,7 @@ func TestCreateSVG(t *testing.T) {
 	for _, td := range testdata {
 		fmt.Printf("\t%s\n", td.infile)
 		opts := OptsT{infile: td.infile, thresholds: td.thresholds, margin: td.margin, paper: td.paper}
+		parsePaperSize(&opts)
 		svgFilename := createSVG(opts)
 		// read back the output
 		bytes, err := os.ReadFile(svgFilename)
