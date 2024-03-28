@@ -58,5 +58,5 @@ Use the original image as a background in the SVG image.  Default false. Example
 
 `hcontours examples/beach.png -t 32,64,96,128,160,192,224 --paper A4L --image` produces this:
 
-<img alt="Photo of breakwaters on a beach" src="examples/beach.png" title="Input image" width=45%>&nbsp;&nbsp;&nbsp;&nbsp;<img alt="The same photo after processing, showing as the outlines of shapes" src="examples/beach-hc-t32,64,96,128,160,192,224m15pA4LI.svg" title="Created SVG image" width=45%>
+<img alt="Photo of breakwaters on a beach" src="examples/beach.png" title="Input image" width=45%>&nbsp;&nbsp;&nbsp;&nbsp;<img alt="The same photo after processing, showing as the outlines of shapes" src="examples/beach-hc-t32,64,96,128,160,192,224m15pA4LI.png" title="Created SVG image (converted to PNG)" width=45%>
 
