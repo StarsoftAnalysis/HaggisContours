@@ -153,7 +153,7 @@ func TestContourFinder(t *testing.T) {
 		if err != nil {
 			t.Errorf("Input file %s not found\n", td.infile)
 		}
-		got := contourFinder(img, width, height, 128, nil)
+		got := contourFinder(img, width, height, 128, false, nil)
 		if len(got) != td.count {
 			t.Errorf("Wrong result for %s (wanted length %v  got %v)\n", td.infile, td.count, len(got))
 		}
@@ -182,7 +182,7 @@ func TestCreateSVG(t *testing.T) {
 	}
 	testdata := []testdataT{ // Compression is done for SVG contours
 		{"tests/test3.png", []int{128}, 15, "A4L",
-			"<svg width=\"297mm\" height=\"210mm\" viewBox=\"0 0 297 210\" style=\"background-color:white\" xmlns=\"http://www.w3.org/2000/svg\" xmlns:inkscape=\"http://www.inkscape.org/namespaces/inkscape\" encoding=\"UTF-8\" >\n<g stroke=\"black\" stroke-width=\"0.1mm\" stroke-linecap=\"round\" stroke-linejoin=\"round\" fill=\"none\" transform=\"translate(58.5,15) scale(8.000)\">\n<g inkscape:groupmode=\"layer\" inkscape:label=\"1\" stroke=\"rgb(0%, 0%, 0%)\">\n<polyline points=\"1.00,0.50 1.50,0.00 \" />\n<polyline points=\"2.50,0.00 3.00,0.50 3.00,1.50 1.50,3.00 0.50,3.00 0.00,2.50 \" />\n<polyline points=\"0.00,1.50 1.00,0.50 \" />\n<polyline points=\"4.00,0.50 4.50,0.00 \" />\n<polyline points=\"0.00,4.50 0.50,4.00 2.50,4.00 4.00,2.50 4.00,0.50 \" />\n<polygon points=\"5.00,4.50 5.50,4.00 6.00,4.50 6.00,5.50 5.50,6.00 4.50,6.00 4.00,5.50 \" />\n</g>\n</g>\n</svg>\n",
+			"<svg width=\"297mm\" height=\"210mm\" viewBox=\"0 0 297 210\" style=\"background-color:white\" xmlns=\"http://www.w3.org/2000/svg\" xmlns:inkscape=\"http://www.inkscape.org/namespaces/inkscape\" encoding=\"UTF-8\" >\n<g stroke=\"black\" stroke-width=\"0.1mm\" stroke-linecap=\"round\" stroke-linejoin=\"round\" fill=\"none\" transform=\"translate(58.5,15) scale(8.000)\">\n<g inkscape:groupmode=\"layer\" inkscape:label=\"1\" stroke=\"rgb(0%, 0%, 0%)\">\n<polyline points=\"1.00,0.50 1.50,0.00 \" />\n<polyline points=\"2.50,0.00 3.00,0.50 3.00,1.50 1.50,3.00 0.50,3.00 0.00,2.50 \" />\n<polyline points=\"0.00,1.50 1.00,0.50 \" />\n<polyline points=\"4.00,0.50 4.50,0.00 \" />\n<polyline points=\"0.00,4.50 0.50,4.00 2.50,4.00 4.00,2.50 4.00,0.50 \" />\n<polygon  points=\"5.00,4.50 5.50,4.00 6.00,4.50 6.00,5.50 5.50,6.00 4.50,6.00 4.00,5.50 \" />\n</g>\n</g>\n</svg>\n",
 		},
 	}
 	for _, td := range testdata {

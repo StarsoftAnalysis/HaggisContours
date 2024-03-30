@@ -155,6 +155,8 @@ type OptsT struct {
 	paperSize  PaperSizeT
 	frame      bool
 	image      bool
+	clip       bool
+	dev        bool
 }
 
 const white = 0xff

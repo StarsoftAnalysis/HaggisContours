@@ -26,12 +26,12 @@ func (svg *SVGfile) line(fromX, fromY, toX, toY float64) {
 	svg.write(fmt.Sprintf("<path d=\"M %6.3f,%6.3f L %6.3f,%6.3f\" />\n", fromX, fromY, toX, toY))
 }
 
-func (svg *SVGfile) polygon(contour ContourT) {
+func (svg *SVGfile) polygon(contour ContourT, args string) {
 	// Single polygon -- assume the contour is closed
 	// e.g.  <polygon points="100,100 150,25 150,75 200,0" fill="none" stroke="black" />
 	//svg.write(fmt.Sprintf("<!-- contour: %v -->\n", contour))
 	//fmt.Printf("polygon: %v\n", contour)
-	svg.write(fmt.Sprint("<polygon points=\""))
+	svg.write(fmt.Sprintf("<polygon %s points=\"", args))
 	for _, p := range contour {
 		svg.write(fmt.Sprintf("%.2f,%.2f ", p.x, p.y))
 	}
@@ -104,7 +104,7 @@ func (svg *SVGfile) polyline(contour ContourT) {
 func (svg *SVGfile) polyshape(contour ContourT) {
 	ccontour := contour.Compress()
 	if ccontour[0].Equal(ccontour[len(ccontour)-1]) {
-		svg.polygon(ccontour[:len(ccontour)-1]) // leave off the last (repeated) point
+		svg.polygon(ccontour[:len(ccontour)-1], "") // leave off the last (repeated) point
 	} else {
 		svg.polyline(ccontour)
 	}
@@ -160,6 +160,34 @@ func (svg *SVGfile) plotContour(contour ContourT, width, height int) {
 	}
 }
 
+func (svg *SVGfile) closedPathStart(args string) {
+	svg.write(fmt.Sprintf("<path clip-path=\"url(#clip1)\" %s d=\"", args)) // FIXME better name for clip1 ?
+}
+
+func (svg *SVGfile) closedPathStop() {
+	svg.write(fmt.Sprint("\" />\n"))
+}
+
+// Write one contour's worth of points to an already started path.
+// Assumes that the start/end point of the closed path is NOT repeated.
+// e.g. M 10,20 L 20,20, L 20,10 Z
+func (svg *SVGfile) closedPathLoop(contour ContourT, args string) {
+	cmd := "M"
+	for _, p := range contour {
+		svg.write(fmt.Sprintf("%s %g,%g ", cmd, p.x, p.y))
+		cmd = "L"
+	}
+	svg.write("Z ")
+}
+
+// Alternative strategy to plot a contour, using clipping instead of broken paths.
+// This will allow filling, but won't work with AxiDraw.
+func (svg *SVGfile) plotContourClip(contour ContourT, width, height int) {
+	const args = "clip-path=\"url(#clip1)\""
+	ccontour := contour.Compress()
+	svg.closedPathLoop(ccontour[:len(ccontour)-1], args)
+}
+
 func (svg *SVGfile) openStart(filename string, opts OptsT) {
 	svg.filename = filename
 	fh, err := os.Create(svg.filename)
@@ -173,9 +201,15 @@ func (svg *SVGfile) openStart(filename string, opts OptsT) {
 	// (The style seems to be ignored by gThumb)
 	bg := fmt.Sprintf("style=\"background-color:%s\"", "white")
 	xmlns := "xmlns=\"http://www.w3.org/2000/svg\" xmlns:inkscape=\"http://www.inkscape.org/namespaces/inkscape\""
-	svgAttribute := fmt.Sprintf("<svg width=\"%gmm\" height=\"%gmm\" %s %s %s encoding=\"UTF-8\" >\n",
+	svgElement := fmt.Sprintf("<svg width=\"%gmm\" height=\"%gmm\" %s %s %s encoding=\"UTF-8\" >\n",
 		opts.paperSize.width, opts.paperSize.height, viewbox, bg, xmlns)
-	svg.write(svgAttribute)
+	svg.write(svgElement)
+
+	// Dev only: show paper limits
+	if opts.dev {
+		paperBox := fmt.Sprintf("<rect width=\"%g\" height=\"%g\" stroke=\"blue\" stroke-dasharray=\"4\" fill=\"none\"/>\n", opts.paperSize.width, opts.paperSize.height)
+		svg.write(paperBox)
+	}
 
 	// Apply translation and scale to whole plot: but don't magnify too much
 	//g := fmt.Sprintf("<g transform=\"translate(%g,%g) scale(%g)\" stroke=\"black\" stroke-width=\"1\" stroke-linecap=\"round\" stroke-linejoin=\"round\" fill=\"none\">\n",
@@ -198,14 +232,34 @@ func (svg *SVGfile) openStart(filename string, opts OptsT) {
 	}
 	const maxScale = 8.0
 	scale = min(scale, maxScale)
+
+	// Dev only: show plot limits
+	if opts.dev {
+		plotBox := fmt.Sprintf("<rect width=\"%g\" height=\"%g\" x=\"%g\" y=\"%g\" stroke=\"green\" stroke-dasharray=\"3\" fill=\"none\"/>\n",
+			float64(opts.width)*scale, float64(opts.height)*scale, translateX, translateY)
+		svg.write(plotBox)
+	}
+
+	transform := fmt.Sprintf("transform=\"translate(%g,%g) scale(%.3f)\"", translateX, translateY, scale)
+
+	if opts.clip { // outside the transformed group
+		//clipString := fmt.Sprintf("<clipPath id=\"clip1\"><rect width=\"%v\" height=\"%v\" %s /></clipPath>\n", opts.width, opts.height, transform)
+		//svg.write(clipString)
+	}
+
 	// Testing only: add arrows to lines  From https://developer.mozilla.org/en-US/docs/Web/SVG/Element/marker
 	//marker := " <defs> <!-- A marker to be used as an arrowhead --> <marker id=\"arrow\" viewBox=\"0 0 10 10\" refX=\"5\" refY=\"5\" markerWidth=\"6\" markerHeight=\"6\" orient=\"auto-start-reverse\"> <path d=\"M 0 0 L 10 5 L 0 10 z\" /> </marker> </defs>"
 	//svg.write(marker)
 	// add this to the <g stroke... group if required:    marker-end=\"url(#arrow)\"
-	g := fmt.Sprintf("<g stroke=\"black\" stroke-width=\"0.1mm\" stroke-linecap=\"round\" stroke-linejoin=\"round\" fill=\"none\" transform=\"translate(%g,%g) scale(%.3f)\">\n",
-		translateX, translateY, scale,
-	)
+
+	g := fmt.Sprintf("<g stroke=\"black\" stroke-width=\"0.1mm\" stroke-linecap=\"round\" stroke-linejoin=\"round\" fill=\"none\" %s>\n", transform)
 	svg.write(g)
+
+	if opts.clip { // inside the transformed group
+		clipString := fmt.Sprintf("<clipPath id=\"clip1\"><rect width=\"%v\" height=\"%v\" /></clipPath>\n", opts.width, opts.height)
+		svg.write(clipString)
+	}
+
 	if opts.frame {
 		frame := fmt.Sprintf("<rect width=\"%d\" height=\"%d\" />\n", opts.width, opts.height)
 		//fmt.Print(frame)

@@ -141,11 +141,15 @@ func b2c(b bool) string {
 	return "f"
 }
 
-func contourFinder(imageData *image.NRGBA, width, height int, threshold int, svgF *SVGfile) ContourS {
+func contourFinder(imageData *image.NRGBA, width, height int, threshold int, clip bool, svgF *SVGfile) ContourS {
 	seen := make([]bool, width*height)
 	skipping := false
 	contourCount := 0
 	contours := make(ContourS, 0, 3)
+	if clip {
+		// start the path -- single path for all contours.   TODO maybe like this for non-clipped paths
+		svgF.closedPathStart("")
+	}
 	for y := 0; y < height; y++ {
 		for x := 0; x < width; x++ {
 			p := PointT{x, y}
@@ -159,7 +163,11 @@ func contourFinder(imageData *image.NRGBA, width, height int, threshold int, svg
 						seen[p.x+p.y*width] = true
 					}
 					if svgF != nil {
-						svgF.plotContour(contour, width, height)
+						if clip {
+							svgF.plotContourClip(contour, width, height)
+						} else {
+							svgF.plotContour(contour, width, height)
+						}
 					}
 				}
 				skipping = true
@@ -167,6 +175,10 @@ func contourFinder(imageData *image.NRGBA, width, height int, threshold int, svg
 				skipping = false
 			}
 		}
+	}
+	if clip {
+		// finish the (closed) path
+		svgF.closedPathStop()
 	}
 	// contours are really only returned for test cases
 	// FIXME some contours may not have generated an SVG e.g. heightmap1
@@ -217,6 +229,8 @@ func parseArgs(args []string) (OptsT, bool) {
 	pf.IntSliceVarP(&opts.thresholds, "threshold", "t", []int{128}, "Threshold levels, each 0..255")
 	pf.BoolVarP(&opts.frame, "frame", "f", false, "Draw a frame around the SVG image")
 	pf.BoolVarP(&opts.image, "image", "i", false, "Use the original image as a background in the SVG image")
+	pf.BoolVarP(&opts.clip, "clip", "c", false, "Clip borders of image, rather than breaking contours")
+	pf.BoolVarP(&opts.dev, "dev", "d", false, "Add extra bits to the SVG -- intended for developer use only")
 	pf.SortFlags = false
 	if args == nil {
 		pf.Parse(os.Args[1:]) // don't pass program name
@@ -257,13 +271,21 @@ func createSVG(opts OptsT) string {
 	if opts.image {
 		imageString = "I"
 	}
-	optString := fmt.Sprintf("-hc-t%sm%gp%s%s%s", intsToString(opts.thresholds), opts.margin, opts.paper, frameString, imageString)
+	clipString := ""
+	if opts.clip {
+		clipString = "C"
+	}
+	devString := ""
+	if opts.dev {
+		devString = "D"
+	}
+	optString := fmt.Sprintf("-hc-t%sm%gp%s%s%s%s%s", intsToString(opts.thresholds), opts.margin, opts.paper, frameString, imageString, clipString, devString)
 	ext := filepath.Ext(opts.infile)
 	svgFilename := strings.TrimSuffix(opts.infile, ext) + optString + ".svg"
 	svgF.openStart(svgFilename, opts)
 	for t, threshold := range opts.thresholds {
 		svgF.layer(t + 1) // Axidraw layers start at 1, not 0   FIXME no, they don't
-		contours := contourFinder(img, opts.width, opts.height, threshold, svgF)
+		contours := contourFinder(img, opts.width, opts.height, threshold, opts.clip, svgF)
 		fmt.Printf("%d contours found at threshold %d\n", len(contours), threshold)
 	}
 	svgF.stopSave()

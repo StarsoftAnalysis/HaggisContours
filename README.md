@@ -50,6 +50,12 @@ Draw a simple frame around the SVG image.  Default false. Example `-f`
 * `--image | -i`
 Use the original image as a background in the SVG image.  Default false. Example: `--image`
 
+* `--clip | -c`
+Clip borders of image, rather than breaking contours.  This will hopefully allow filling contours, but won't work with AxiDraw. Default false.
+
+* `--dev | -d`
+Add extra bits to the SVG -- intended for developer use only.  Default false.
+
 ## Examples
 
 `hcontours examples/Heightmap.png -t 64,128,192 --paper 200x200 --margin 0 --frame` produces this:
