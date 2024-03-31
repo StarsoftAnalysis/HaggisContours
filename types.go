@@ -150,6 +150,7 @@ type OptsT struct {
 	width      int
 	height     int
 	thresholds []int
+	tcount     int
 	margin     float64
 	paper      string
 	paperSize  PaperSizeT

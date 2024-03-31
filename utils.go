@@ -125,3 +125,24 @@ func mmOrInch(val, limit float64) float64 {
 	}
 	return val * 25.4
 }
+
+// Make sure n is within [low, high]
+func limitInt(n, low, high int) int {
+	if n < low {
+		n = low
+	} else if n > high {
+		n = high
+	}
+	return n
+}
+
+// Return a slice of integers evenly spaced from 1 to 255.
+// Assumes n is within the range 1 to 255
+func evenThresholds(n int) []int {
+	step := 256.0 / float64(n+1)
+	thresholds := make([]int, n)
+	for i := range n {
+		thresholds[i] = int(math.Round(step * float64((i + 1))))
+	}
+	return thresholds
+}

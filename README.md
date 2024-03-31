@@ -31,7 +31,11 @@ the values used for the threshold, margin, and paper options -- in this case, th
 
 * `--threshold | -t <value[,...]>`
 Specify one or more threshold values, separated by commas, each in the range 0..255.  These are the pixel
-values that are used to find the contours.  Default `128`. Examples: `-t 99` `--threshold 32,64,96,128,160,192,224`
+values that are used to find the contours.  If used, this option overrides --tcount.  Default `128`. Examples: `-t 99` `--threshold 32,64,96,128,160,192,224`
+
+* `--tcount | -T <1..254>`
+Set the number of evenly-spaced threshold values.  For example, `-T 3` is equivalent to `-t 64,128,192`.  This option is ignored if `--threshold` is also specified.
+Valid range is 1 to 254.  Default `1`.  Examples: `--tcount 7` `-T8`
 
 * `--linewidth`
 The line width used for drawing contours, in millimetres.  Default `0.5`.  Examples: `--linewidth 1`, `--linewidth 2.54`

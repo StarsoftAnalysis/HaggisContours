@@ -227,6 +227,7 @@ func parseArgs(args []string) (OptsT, bool) {
 	pf.Float64VarP(&opts.margin, "margin", "m", 15, "Minimum margin (in mm).")
 	pf.StringVarP(&opts.paper, "paper", "p", "A4L", "Paper size and orientation.  A4L | A4P | A3L | A3P.")
 	pf.IntSliceVarP(&opts.thresholds, "threshold", "t", []int{128}, "Threshold levels, each 0..255, separated by commas.")
+	pf.IntVarP(&opts.tcount, "tcount", "T", 1, "Number of evenly-spaced threshold levels (unless overridden by --threshold).")
 	pf.BoolVarP(&opts.frame, "frame", "f", false, "Draw a frame around the SVG image.")
 	pf.BoolVarP(&opts.image, "image", "i", false, "Use the original image as a background in the SVG image.")
 	pf.BoolVarP(&opts.clip, "clip", "c", false, "Clip borders of image, rather than breaking contours.")
@@ -243,6 +244,13 @@ func parseArgs(args []string) (OptsT, bool) {
 	if pf.NArg() < 1 {
 		fmt.Println("No input file name given")
 		ok = false
+	}
+	if pf.Changed("threshold") {
+		// User has set thresholds -- don't use tcount
+		opts.tcount = -1
+	} else {
+		opts.tcount = limitInt(opts.tcount, 1, 255)
+		opts.thresholds = evenThresholds(opts.tcount)
 	}
 	opts.infile = pf.Arg(0)
 	ok = ok && parsePaperSize(&opts)
@@ -281,7 +289,13 @@ func createSVG(opts OptsT) string {
 	if opts.dev {
 		devString = "D"
 	}
-	optString := fmt.Sprintf("-hc-t%sm%gp%s%s%s%s%s", intsToString(opts.thresholds), opts.margin, opts.paper, frameString, imageString, clipString, devString)
+	tString := ""
+	if opts.tcount == -1 {
+		tString = "t" + intsToString(opts.thresholds)
+	} else {
+		tString = fmt.Sprintf("T%d", opts.tcount)
+	}
+	optString := fmt.Sprintf("-hc-%sm%gp%s%s%s%s%s", tString, opts.margin, opts.paper, frameString, imageString, clipString, devString)
 	ext := filepath.Ext(opts.infile)
 	svgFilename := strings.TrimSuffix(opts.infile, ext) + optString + ".svg"
 	svgF.openStart(svgFilename, opts)
