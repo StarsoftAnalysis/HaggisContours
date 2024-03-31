@@ -33,6 +33,9 @@ the values used for the threshold, margin, and paper options -- in this case, th
 Specify one or more threshold values, separated by commas, each in the range 0..255.  These are the pixel
 values that are used to find the contours.  Default `128`. Examples: `-t 99` `--threshold 32,64,96,128,160,192,224`
 
+* `--linewidth`
+The line width used for drawing contours, in millimetres.  Default `0.5`.  Examples: `--linewidth 1`, `--linewidth 2.54`
+
 * `--margin | -m <width>`
 Define the minimum width of the margin around the created image.  
 The value is interpreted as millimetres if greater than 2, otherwise as inches.
@@ -46,6 +49,9 @@ Default A4L. Examples: `-p A3L` `--paper 200x300` (mm) `-p 7x5` (inches)
 
 * `--frame | -f`
 Draw a simple frame around the SVG image.  Default false. Example `-f`
+
+* `--framewidth`
+The line width used for drawing the frame, in millimetres.  Default `1.0`.  Examples: `--framewidth 3`, `--framewidth 0.8`
 
 * `--image | -i`
 Use the original image as a background in the SVG image.  Default false. Example: `--image`

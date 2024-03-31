@@ -157,6 +157,8 @@ type OptsT struct {
 	image      bool
 	clip       bool
 	dev        bool
+	linewidth  float64
+	framewidth float64
 }
 
 const white = 0xff

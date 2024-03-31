@@ -16,11 +16,15 @@ type SVGfile struct {
 	filename     string
 }
 
+// SVG attribute used in various places
+const venss = "vector-effect=\"non-scaling-stroke\""
+
 func (svg *SVGfile) write(s string) {
 	//fmt.Printf("SVG.write: %s\n", s)
 	fmt.Fprint(svg.file, s)
 }
 
+// Not used:
 func (svg *SVGfile) line(fromX, fromY, toX, toY float64) {
 	// Write a line path; coordinates are ... scaling is done in svg.openStart
 	svg.write(fmt.Sprintf("<path d=\"M %6.3f,%6.3f L %6.3f,%6.3f\" />\n", fromX, fromY, toX, toY))
@@ -31,7 +35,7 @@ func (svg *SVGfile) polygon(contour ContourT, args string) {
 	// e.g.  <polygon points="100,100 150,25 150,75 200,0" fill="none" stroke="black" />
 	//svg.write(fmt.Sprintf("<!-- contour: %v -->\n", contour))
 	//fmt.Printf("polygon: %v\n", contour)
-	svg.write(fmt.Sprintf("<polygon %s points=\"", args))
+	svg.write(fmt.Sprintf("<polygon %s %s points=\"", venss, args))
 	for _, p := range contour {
 		svg.write(fmt.Sprintf("%.2f,%.2f ", p.x, p.y))
 	}
@@ -93,7 +97,7 @@ func offImage(p Point64T, width, height int) bool {
 // Given a contour (a slice of coordinates), make them into a polyline
 func (svg *SVGfile) polyline(contour ContourT) {
 	//fmt.Printf("polyline: %v\n", contour)
-	svg.write(fmt.Sprint("<polyline points=\""))
+	svg.write(fmt.Sprintf("<polyline %s points=\"", venss))
 	for _, p := range contour {
 		svg.write(fmt.Sprintf("%.2f,%.2f ", p.x, p.y))
 	}
@@ -104,7 +108,7 @@ func (svg *SVGfile) polyline(contour ContourT) {
 func (svg *SVGfile) polyshape(contour ContourT) {
 	ccontour := contour.Compress()
 	if ccontour[0].Equal(ccontour[len(ccontour)-1]) {
-		svg.polygon(ccontour[:len(ccontour)-1], "") // leave off the last (repeated) point
+		svg.polygon(ccontour[:len(ccontour)-1], "") // leave off the last (repeated) point   FIXME don't need to
 	} else {
 		svg.polyline(ccontour)
 	}
@@ -169,7 +173,7 @@ func (svg *SVGfile) closedPathStop() {
 }
 
 // Write one contour's worth of points to an already started path.
-// Assumes that the start/end point of the closed path is NOT repeated.
+// Assumes that the start/end point of the closed path is NOT repeated.    FIXME doesn't matter
 // e.g. M 10,20 L 20,20, L 20,10 Z
 func (svg *SVGfile) closedPathLoop(contour ContourT, args string) {
 	cmd := "M"
@@ -185,7 +189,7 @@ func (svg *SVGfile) closedPathLoop(contour ContourT, args string) {
 func (svg *SVGfile) plotContourClip(contour ContourT, width, height int) {
 	const args = "clip-path=\"url(#clip1)\""
 	ccontour := contour.Compress()
-	svg.closedPathLoop(ccontour[:len(ccontour)-1], args)
+	svg.closedPathLoop(ccontour[:len(ccontour)-1], args) // FIXME don't need to leave off last one
 }
 
 func (svg *SVGfile) openStart(filename string, opts OptsT) {
@@ -252,7 +256,7 @@ func (svg *SVGfile) openStart(filename string, opts OptsT) {
 	//svg.write(marker)
 	// add this to the <g stroke... group if required:    marker-end=\"url(#arrow)\"
 
-	g := fmt.Sprintf("<g stroke=\"black\" stroke-width=\"0.1mm\" stroke-linecap=\"round\" stroke-linejoin=\"round\" fill=\"none\" %s>\n", transform)
+	g := fmt.Sprintf("<g stroke=\"black\" stroke-width=\"%.2fmm\" stroke-linecap=\"round\" stroke-linejoin=\"round\" fill=\"none\" %s>\n", opts.linewidth, transform)
 	svg.write(g)
 
 	if opts.clip { // inside the transformed group
@@ -261,7 +265,7 @@ func (svg *SVGfile) openStart(filename string, opts OptsT) {
 	}
 
 	if opts.frame {
-		frame := fmt.Sprintf("<rect width=\"%d\" height=\"%d\" />\n", opts.width, opts.height)
+		frame := fmt.Sprintf("<rect width=\"%d\" height=\"%d\" stroke-width=\"%.2fmm\" %s />\n", opts.width, opts.height, opts.framewidth, venss)
 		//fmt.Print(frame)
 		svg.write(frame)
 	}
