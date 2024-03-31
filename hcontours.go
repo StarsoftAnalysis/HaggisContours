@@ -285,8 +285,8 @@ func createSVG(opts OptsT) string {
 	ext := filepath.Ext(opts.infile)
 	svgFilename := strings.TrimSuffix(opts.infile, ext) + optString + ".svg"
 	svgF.openStart(svgFilename, opts)
-	for t, threshold := range opts.thresholds {
-		svgF.layer(t + 1) // Axidraw layers start at 1, not 0   FIXME no, they don't
+	for _, threshold := range opts.thresholds {
+		svgF.layer(threshold)
 		contours := contourFinder(img, opts.width, opts.height, threshold, opts.clip, svgF)
 		fmt.Printf("%d contours found at threshold %d\n", len(contours), threshold)
 	}

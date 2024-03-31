@@ -108,7 +108,7 @@ func (svg *SVGfile) polyline(contour ContourT) {
 func (svg *SVGfile) polyshape(contour ContourT) {
 	ccontour := contour.Compress()
 	if ccontour[0].Equal(ccontour[len(ccontour)-1]) {
-		svg.polygon(ccontour[:len(ccontour)-1], "") // leave off the last (repeated) point   FIXME don't need to
+		svg.polygon(ccontour, "")
 	} else {
 		svg.polyline(ccontour)
 	}
@@ -173,12 +173,11 @@ func (svg *SVGfile) closedPathStop() {
 }
 
 // Write one contour's worth of points to an already started path.
-// Assumes that the start/end point of the closed path is NOT repeated.    FIXME doesn't matter
 // e.g. M 10,20 L 20,20, L 20,10 Z
 func (svg *SVGfile) closedPathLoop(contour ContourT, args string) {
 	cmd := "M"
 	for _, p := range contour {
-		svg.write(fmt.Sprintf("%s %g,%g ", cmd, p.x, p.y))
+		svg.write(fmt.Sprintf("%s %.2f,%.2f ", cmd, p.x, p.y))
 		cmd = "L"
 	}
 	svg.write("Z ")
@@ -189,7 +188,7 @@ func (svg *SVGfile) closedPathLoop(contour ContourT, args string) {
 func (svg *SVGfile) plotContourClip(contour ContourT, width, height int) {
 	const args = "clip-path=\"url(#clip1)\""
 	ccontour := contour.Compress()
-	svg.closedPathLoop(ccontour[:len(ccontour)-1], args) // FIXME don't need to leave off last one
+	svg.closedPathLoop(ccontour, args)
 }
 
 func (svg *SVGfile) openStart(filename string, opts OptsT) {
@@ -260,7 +259,7 @@ func (svg *SVGfile) openStart(filename string, opts OptsT) {
 	svg.write(g)
 
 	if opts.clip { // inside the transformed group
-		clipString := fmt.Sprintf("<clipPath id=\"clip1\"><rect width=\"%v\" height=\"%v\" /></clipPath>\n", opts.width, opts.height)
+		clipString := fmt.Sprintf("<clipPath id=\"clip1\" %s ><rect width=\"%v\" height=\"%v\" /></clipPath>\n", venss, opts.width, opts.height)
 		svg.write(clipString)
 	}
 

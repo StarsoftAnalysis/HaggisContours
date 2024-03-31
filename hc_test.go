@@ -178,16 +178,20 @@ func TestCreateSVG(t *testing.T) {
 		thresholds []int
 		margin     float64
 		paper      string
+		clip       bool
 		wanted     string
 	}
 	testdata := []testdataT{ // Compression is done for SVG contours
-		{"tests/test3.png", []int{128}, 15, "A4L",
-			"<svg width=\"297mm\" height=\"210mm\" viewBox=\"0 0 297 210\" style=\"background-color:white\" xmlns=\"http://www.w3.org/2000/svg\" xmlns:inkscape=\"http://www.inkscape.org/namespaces/inkscape\" encoding=\"UTF-8\" >\n<g stroke=\"black\" stroke-width=\"0.00mm\" stroke-linecap=\"round\" stroke-linejoin=\"round\" fill=\"none\" transform=\"translate(58.5,15) scale(8.000)\">\n<g inkscape:groupmode=\"layer\" inkscape:label=\"1\" stroke=\"rgb(0%, 0%, 0%)\">\n<polyline vector-effect=\"non-scaling-stroke\" points=\"1.00,0.50 1.50,0.00 \" />\n<polyline vector-effect=\"non-scaling-stroke\" points=\"2.50,0.00 3.00,0.50 3.00,1.50 1.50,3.00 0.50,3.00 0.00,2.50 \" />\n<polyline vector-effect=\"non-scaling-stroke\" points=\"0.00,1.50 1.00,0.50 \" />\n<polyline vector-effect=\"non-scaling-stroke\" points=\"4.00,0.50 4.50,0.00 \" />\n<polyline vector-effect=\"non-scaling-stroke\" points=\"0.00,4.50 0.50,4.00 2.50,4.00 4.00,2.50 4.00,0.50 \" />\n<polygon vector-effect=\"non-scaling-stroke\"  points=\"5.00,4.50 5.50,4.00 6.00,4.50 6.00,5.50 5.50,6.00 4.50,6.00 4.00,5.50 \" />\n</g>\n</g>\n</svg>\n",
+		{"tests/test3.png", []int{128}, 15, "A4L", false,
+			"<svg width=\"297mm\" height=\"210mm\" viewBox=\"0 0 297 210\" style=\"background-color:white\" xmlns=\"http://www.w3.org/2000/svg\" xmlns:inkscape=\"http://www.inkscape.org/namespaces/inkscape\" encoding=\"UTF-8\" >\n<g stroke=\"black\" stroke-width=\"0.00mm\" stroke-linecap=\"round\" stroke-linejoin=\"round\" fill=\"none\" transform=\"translate(58.5,15) scale(8.000)\">\n<g inkscape:groupmode=\"layer\" inkscape:label=\"128\" stroke=\"rgb(0%, 0%, 0%)\">\n<polyline vector-effect=\"non-scaling-stroke\" points=\"1.00,0.50 1.50,0.00 \" />\n<polyline vector-effect=\"non-scaling-stroke\" points=\"2.50,0.00 3.00,0.50 3.00,1.50 1.50,3.00 0.50,3.00 0.00,2.50 \" />\n<polyline vector-effect=\"non-scaling-stroke\" points=\"0.00,1.50 1.00,0.50 \" />\n<polyline vector-effect=\"non-scaling-stroke\" points=\"4.00,0.50 4.50,0.00 \" />\n<polyline vector-effect=\"non-scaling-stroke\" points=\"0.00,4.50 0.50,4.00 2.50,4.00 4.00,2.50 4.00,0.50 \" />\n<polygon vector-effect=\"non-scaling-stroke\"  points=\"5.00,4.50 5.50,4.00 6.00,4.50 6.00,5.50 5.50,6.00 4.50,6.00 4.00,5.50 5.00,4.50 \" />\n</g>\n</g>\n</svg>\n",
+		},
+		{"tests/test4.png", []int{100, 200}, 15, "A4P", true,
+			"<svg width=\"210mm\" height=\"297mm\" viewBox=\"0 0 210 297\" style=\"background-color:white\" xmlns=\"http://www.w3.org/2000/svg\" xmlns:inkscape=\"http://www.inkscape.org/namespaces/inkscape\" encoding=\"UTF-8\" >\n<g stroke=\"black\" stroke-width=\"0.00mm\" stroke-linecap=\"round\" stroke-linejoin=\"round\" fill=\"none\" transform=\"translate(15,88.5) scale(8.000)\">\n<clipPath id=\"clip1\" vector-effect=\"non-scaling-stroke\" ><rect width=\"6\" height=\"4\" /></clipPath>\n<g inkscape:groupmode=\"layer\" inkscape:label=\"100\" stroke=\"rgb(0%, 0%, 0%)\">\n<path clip-path=\"url(#clip1)\"  d=\"M 1.11,0.50 L 1.50,-0.00 L 1.89,0.50 L 2.89,1.50 L 2.89,2.50 L 1.89,3.50 L 1.50,4.00 L 1.11,3.50 L 0.50,2.89 L -0.00,2.50 L -0.00,1.50 L 0.50,1.11 L 1.11,0.50 Z M 4.11,0.50 L 4.50,-0.00 L 5.50,-0.00 L 6.00,0.50 L 6.00,1.50 L 5.50,1.89 L 4.50,1.89 L 4.11,1.50 L 4.11,0.50 Z M 4.11,3.50 L 4.50,3.11 L 4.89,3.50 L 4.50,4.00 L 4.11,3.50 Z \" />\n</g>\n<g inkscape:groupmode=\"layer\" inkscape:label=\"200\" stroke=\"rgb(0%, 0%, 0%)\">\n<path clip-path=\"url(#clip1)\"  d=\"M 0.72,0.50 L 1.50,-0.00 L 2.28,0.50 L 3.28,1.50 L 3.28,2.50 L 2.28,3.50 L 1.50,4.00 L 0.72,3.50 L 0.50,3.28 L -0.00,2.50 L -0.00,1.50 L 0.50,0.72 L 0.72,0.50 Z M 3.72,0.50 L 4.50,-0.00 L 5.50,-0.00 L 6.00,0.50 L 6.00,1.50 L 5.50,2.28 L 4.50,2.28 L 3.72,1.50 L 3.72,0.50 Z M 3.72,3.50 L 4.50,2.72 L 5.28,3.50 L 4.50,4.00 L 3.72,3.50 Z \" />\n</g>\n</g>\n</svg>\n",
 		},
 	}
 	for _, td := range testdata {
 		fmt.Printf("\t%s\n", td.infile)
-		opts := OptsT{infile: td.infile, thresholds: td.thresholds, margin: td.margin, paper: td.paper}
+		opts := OptsT{infile: td.infile, thresholds: td.thresholds, margin: td.margin, paper: td.paper, clip: td.clip}
 		parsePaperSize(&opts)
 		svgFilename := createSVG(opts)
 		// read back the output
