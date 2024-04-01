@@ -16,9 +16,6 @@ type SVGfile struct {
 	filename     string
 }
 
-// SVG attribute used in various places
-const venss = "vector-effect=\"non-scaling-stroke\""
-
 func (svg *SVGfile) write(s string) {
 	//fmt.Printf("SVG.write: %s\n", s)
 	fmt.Fprint(svg.file, s)
@@ -35,7 +32,7 @@ func (svg *SVGfile) polygon(contour ContourT, args string) {
 	// e.g.  <polygon points="100,100 150,25 150,75 200,0" fill="none" stroke="black" />
 	//svg.write(fmt.Sprintf("<!-- contour: %v -->\n", contour))
 	//fmt.Printf("polygon: %v\n", contour)
-	svg.write(fmt.Sprintf("<polygon %s %s points=\"", venss, args))
+	svg.write(fmt.Sprintf("<polygon %s points=\"", args))
 	for _, p := range contour {
 		svg.write(fmt.Sprintf("%.2f,%.2f ", p.x, p.y))
 	}
@@ -97,7 +94,7 @@ func offImage(p Point64T, width, height int) bool {
 // Given a contour (a slice of coordinates), make them into a polyline
 func (svg *SVGfile) polyline(contour ContourT) {
 	//fmt.Printf("polyline: %v\n", contour)
-	svg.write(fmt.Sprintf("<polyline %s points=\"", venss))
+	svg.write(fmt.Sprint("<polyline points=\""))
 	for _, p := range contour {
 		svg.write(fmt.Sprintf("%.2f,%.2f ", p.x, p.y))
 	}
@@ -243,28 +240,20 @@ func (svg *SVGfile) openStart(filename string, opts OptsT) {
 		svg.write(plotBox)
 	}
 
-	transform := fmt.Sprintf("transform=\"translate(%g,%g) scale(%.3f)\"", translateX, translateY, scale)
+	transform := fmt.Sprintf("transform=\"translate(%g,%g) scale(%.4f)\"", translateX, translateY, scale)
 
-	if opts.clip { // outside the transformed group
-		//clipString := fmt.Sprintf("<clipPath id=\"clip1\"><rect width=\"%v\" height=\"%v\" %s /></clipPath>\n", opts.width, opts.height, transform)
-		//svg.write(clipString)
-	}
-
-	// Testing only: add arrows to lines  From https://developer.mozilla.org/en-US/docs/Web/SVG/Element/marker
-	//marker := " <defs> <!-- A marker to be used as an arrowhead --> <marker id=\"arrow\" viewBox=\"0 0 10 10\" refX=\"5\" refY=\"5\" markerWidth=\"6\" markerHeight=\"6\" orient=\"auto-start-reverse\"> <path d=\"M 0 0 L 10 5 L 0 10 z\" /> </marker> </defs>"
-	//svg.write(marker)
-	// add this to the <g stroke... group if required:    marker-end=\"url(#arrow)\"
-
-	g := fmt.Sprintf("<g stroke=\"black\" stroke-width=\"%.2fmm\" stroke-linecap=\"round\" stroke-linejoin=\"round\" fill=\"none\" %s>\n", opts.linewidth, transform)
+	// stroke-width is 'unscaled' to result in what the user asked for
+	g := fmt.Sprintf("<g stroke=\"black\" stroke-width=\"%.4f\" stroke-linecap=\"round\" stroke-linejoin=\"round\" fill=\"none\" %s>\n", opts.linewidth/scale, transform)
 	svg.write(g)
 
 	if opts.clip { // inside the transformed group
-		clipString := fmt.Sprintf("<clipPath id=\"clip1\" %s ><rect width=\"%v\" height=\"%v\" /></clipPath>\n", venss, opts.width, opts.height)
+		clipString := fmt.Sprintf("<clipPath id=\"clip1\" ><rect width=\"%v\" height=\"%v\" /></clipPath>\n", opts.width, opts.height)
 		svg.write(clipString)
 	}
 
 	if opts.frame {
-		frame := fmt.Sprintf("<rect width=\"%d\" height=\"%d\" stroke-width=\"%.2fmm\" %s />\n", opts.width, opts.height, opts.framewidth, venss)
+		// stroke-width is 'unscaled' to result in what the user asked for
+		frame := fmt.Sprintf("<rect width=\"%d\" height=\"%d\" stroke-width=\"%.4f\" />\n", opts.width, opts.height, opts.framewidth/scale)
 		//fmt.Print(frame)
 		svg.write(frame)
 	}

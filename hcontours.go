@@ -190,7 +190,7 @@ func parsePaperSize(opts *OptsT) bool {
 	valid := true
 	ps := strings.ToUpper((*opts).paper)
 	dims := strings.Split(ps, "X")
-	fmt.Printf("pPS: ps=%v dims=%v\n", ps, dims)
+	//fmt.Printf("pPS: ps=%v dims=%v\n", ps, dims)
 	if len(dims) == 1 {
 		// no 'X' -- should be a standard size
 		size, ok := paperSizes[ps]
