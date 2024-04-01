@@ -264,15 +264,7 @@ func parseArgs(args []string) (OptsT, bool) {
 	return opts, ok
 }
 
-func createSVG(opts OptsT) string {
-	var svgF *SVGfile = new(SVGfile)
-	img, width, height, err := loadImage(opts.infile)
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(2)
-	}
-	opts.width = width
-	opts.height = height
+func buildSVGfilename(opts OptsT) string {
 	frameString := ""
 	if opts.frame {
 		frameString = "F"
@@ -297,7 +289,20 @@ func createSVG(opts OptsT) string {
 	}
 	optString := fmt.Sprintf("-hc-%sm%gp%s%s%s%s%s", tString, opts.margin, opts.paper, frameString, imageString, clipString, devString)
 	ext := filepath.Ext(opts.infile)
-	svgFilename := strings.TrimSuffix(opts.infile, ext) + optString + ".svg"
+	filename := strings.TrimSuffix(opts.infile, ext) + optString + ".svg"
+	return filename
+}
+
+func createSVG(opts OptsT) string {
+	var svgF *SVGfile = new(SVGfile)
+	img, width, height, err := loadImage(opts.infile)
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(2)
+	}
+	opts.width = width
+	opts.height = height
+	svgFilename := buildSVGfilename(opts)
 	svgF.openStart(svgFilename, opts)
 	for _, threshold := range opts.thresholds {
 		svgF.layer(threshold)

@@ -51,9 +51,42 @@ func TestPWA(t *testing.T) {
 	}
 }
 
+func TestFilename(t *testing.T) {
+	fmt.Println("TestFilename")
+	type testdataT struct {
+		opts   OptsT
+		wanted string
+	}
+	/*
+		infile     string
+		width      int
+		height     int
+		thresholds []int
+		tcount     int
+		margin     float64
+		paper      string
+		paperSize  PaperSizeT
+		frame      bool
+		image      bool
+		clip       bool
+		dev        bool
+		linewidth  float64
+		framewidth float64
+	*/
+	testdata := []testdataT{
+		{OptsT{"file1.png", 100, 200, []int{44, 55}, -1, 15.0, "5x7", PaperSizeT{0, 0}, false, true, false, true, 1.0, 2.0}, "file1-hc-t44,55m15p5x7ID.svg"},
+		{OptsT{"file1.png", 100, 200, []int{}, 3, 10.3, "200x300", PaperSizeT{0, 0}, true, false, true, false, 1.0, 2.0}, "file1-hc-T3m10.3p200x300FC.svg"},
+	}
+	for i, td := range testdata {
+		filename := buildSVGfilename(td.opts)
+		if filename != td.wanted {
+			t.Errorf("(%d) Wrong filename: wanted '%s' got '%s'\n", i, td.wanted, filename)
+		}
+	}
+}
+
 func TestTraceContour(t *testing.T) {
 	fmt.Println("TestTraceContour")
-
 	type testdataT struct {
 		infile  string
 		contour ContourT
@@ -203,10 +236,11 @@ func TestCreateSVG(t *testing.T) {
 			bytes, err := os.ReadFile(svgFilename)
 			if err != nil {
 				t.Errorf("Can't read in the SVG file: %s", err)
-			}
-			got := string(bytes)
-			if got != td.wanted {
-				t.Errorf("Wrong result for %s\n\twanted '%s'\n\t   got '%s')\n", td.infile, td.wanted, got)
+			} else {
+				got := string(bytes)
+				if got != td.wanted {
+					t.Errorf("Wrong result for %s\n\twanted '%s'\n\t   got '%s')\n", td.infile, td.wanted, got)
+				}
 			}
 		}
 	}
