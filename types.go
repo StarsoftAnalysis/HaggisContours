@@ -132,16 +132,23 @@ func (cs ContourS) String() string {
 	return "{" + strings.Join(s, ", ") + "}"
 }
 
-type PaperSizeT struct {
+type RectangleT struct {
 	width  float64
 	height float64
 }
 
-var paperSizes = map[string]PaperSizeT{
-	"A4L": PaperSizeT{width: 297, height: 210},
-	"A4P": PaperSizeT{width: 210, height: 297},
-	"A3L": PaperSizeT{width: 420, height: 297},
-	"A3P": PaperSizeT{width: 297, height: 420},
+func (r RectangleT) String() string {
+	return fmt.Sprintf("{%.4f, %.4f}", r.width, r.height)
+}
+func (r1 RectangleT) Equal(r2 RectangleT) bool {
+	return math.Abs(r1.width-r2.width) < 0.001 && math.Abs(r1.height-r2.height) < 0.001
+}
+
+var paperSizes = map[string]RectangleT{
+	"A4L": RectangleT{width: 297, height: 210},
+	"A4P": RectangleT{width: 210, height: 297},
+	"A3L": RectangleT{width: 420, height: 297},
+	"A3P": RectangleT{width: 297, height: 420},
 }
 
 // Options and derived things
@@ -153,7 +160,7 @@ type OptsT struct {
 	tcount     int
 	margin     float64
 	paper      string
-	paperSize  PaperSizeT
+	paperSize  RectangleT
 	frame      bool
 	image      bool
 	clip       bool

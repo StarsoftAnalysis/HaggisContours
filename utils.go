@@ -146,3 +146,7 @@ func evenThresholds(n int) []int {
 	}
 	return thresholds
 }
+
+func almostEqual(a, b float64, epsilon float64) bool {
+	return math.Abs(a-b) <= epsilon
+}

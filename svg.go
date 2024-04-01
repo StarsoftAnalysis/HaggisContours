@@ -188,6 +188,31 @@ func (svg *SVGfile) plotContourClip(contour ContourT, width, height int) {
 	svg.closedPathLoop(ccontour, args)
 }
 
+func calcSizes(plot RectangleT, margin float64, paper RectangleT) (RectangleT, float64) {
+	// Apply translation and scale to whole plot: but don't magnify too much
+	//g := fmt.Sprintf("<g transform=\"translate(%g,%g) scale(%g)\" stroke=\"black\" stroke-width=\"1\" stroke-linecap=\"round\" stroke-linejoin=\"round\" fill=\"none\">\n",
+	printWidth := paper.width - 2*margin
+	printHeight := paper.height - 2*margin
+	imageAspect := float64(plot.width) / float64(plot.height)
+	printAspect := printWidth / printHeight
+	//fmt.Printf("print %g x %g  plot %g x %g   pA %g   iA  %g\n", printWidth, printHeight, plot.width, plot.height, printAspect, imageAspect)
+	var scale float64
+	var translate RectangleT
+	if imageAspect > printAspect {
+		scale = printWidth / float64(plot.width)
+		//fmt.Println("scaling width")
+		translate.width = margin
+		translate.height = (paper.height - float64(plot.height)*scale) / 2
+	} else {
+		scale = printHeight / float64(plot.height)
+		//fmt.Println("scaling height")
+		translate.width = (paper.width - float64(plot.width)*scale) / 2
+		translate.height = margin
+	}
+	//fmt.Printf("translate = %g,%g  scale=%g\n", translate.width, translate.height, scale)
+	return translate, scale
+}
+
 func (svg *SVGfile) openStart(filename string, opts OptsT) {
 	svg.filename = filename
 	fh, err := os.Create(svg.filename)
@@ -211,36 +236,16 @@ func (svg *SVGfile) openStart(filename string, opts OptsT) {
 		svg.write(paperBox)
 	}
 
-	// Apply translation and scale to whole plot: but don't magnify too much
-	//g := fmt.Sprintf("<g transform=\"translate(%g,%g) scale(%g)\" stroke=\"black\" stroke-width=\"1\" stroke-linecap=\"round\" stroke-linejoin=\"round\" fill=\"none\">\n",
-	printWidth := opts.paperSize.width - 2*opts.margin
-	printHeight := opts.paperSize.height - 2*opts.margin
-	imageAspect := float64(opts.width) / float64(opts.height)
-	printAspect := printWidth / printHeight
-	//fmt.Printf("print %g x %g  img %d x %d   pA %g   iA  %g\n", printWidth, printHeight, opts.width, opts.height, printAspect, imageAspect)
-	var scale, translateX, translateY float64
-	if imageAspect > printAspect {
-		scale = printWidth / float64(opts.width)
-		//fmt.Println("scaling width")
-		translateX = opts.margin
-		translateY = (opts.paperSize.height - float64(opts.height)*scale) / 2
-	} else {
-		scale = printHeight / float64(opts.height)
-		//fmt.Println("scaling height")
-		translateX = (opts.paperSize.width - float64(opts.width)*scale) / 2
-		translateY = opts.margin
-	}
-	const maxScale = 8.0
-	scale = min(scale, maxScale)
+	translate, scale := calcSizes(RectangleT{float64(opts.width), float64(opts.height)}, opts.margin, opts.paperSize)
 
 	// Dev only: show plot limits
 	if opts.dev {
 		plotBox := fmt.Sprintf("<rect width=\"%g\" height=\"%g\" x=\"%g\" y=\"%g\" stroke=\"green\" stroke-dasharray=\"3\" fill=\"none\"/>\n",
-			float64(opts.width)*scale, float64(opts.height)*scale, translateX, translateY)
+			float64(opts.width)*scale, float64(opts.height)*scale, translate.width, translate.height)
 		svg.write(plotBox)
 	}
 
-	transform := fmt.Sprintf("transform=\"translate(%g,%g) scale(%.4f)\"", translateX, translateY, scale)
+	transform := fmt.Sprintf("transform=\"translate(%g,%g) scale(%.4f)\"", translate.width, translate.height, scale)
 
 	// stroke-width is 'unscaled' to result in what the user asked for
 	g := fmt.Sprintf("<g stroke=\"black\" stroke-width=\"%.4f\" stroke-linecap=\"round\" stroke-linejoin=\"round\" fill=\"none\" %s>\n", opts.linewidth/scale, transform)

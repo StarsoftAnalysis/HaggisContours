@@ -209,7 +209,7 @@ func parsePaperSize(opts *OptsT) bool {
 		} else {
 			paperWidth = mmOrInch(paperWidth, 30)
 			paperHeight = mmOrInch(paperHeight, 30)
-			(*opts).paperSize = PaperSizeT{width: paperWidth, height: paperHeight}
+			(*opts).paperSize = RectangleT{width: paperWidth, height: paperHeight}
 		}
 	} else {
 		// too many X's

@@ -65,7 +65,7 @@ func TestFilename(t *testing.T) {
 		tcount     int
 		margin     float64
 		paper      string
-		paperSize  PaperSizeT
+		paperSize  RectangleT
 		frame      bool
 		image      bool
 		clip       bool
@@ -74,8 +74,8 @@ func TestFilename(t *testing.T) {
 		framewidth float64
 	*/
 	testdata := []testdataT{
-		{OptsT{"file1.png", 100, 200, []int{44, 55}, -1, 15.0, "5x7", PaperSizeT{0, 0}, false, true, false, true, 1.0, 2.0}, "file1-hc-t44,55m15p5x7ID.svg"},
-		{OptsT{"file1.png", 100, 200, []int{}, 3, 10.3, "200x300", PaperSizeT{0, 0}, true, false, true, false, 1.0, 2.0}, "file1-hc-T3m10.3p200x300FC.svg"},
+		{OptsT{"file1.png", 100, 200, []int{44, 55}, -1, 15.0, "5x7", RectangleT{0, 0}, false, true, false, true, 1.0, 2.0}, "file1-hc-t44,55m15p5x7ID.svg"},
+		{OptsT{"file1.png", 100, 200, []int{}, 3, 10.3, "200x300", RectangleT{0, 0}, true, false, true, false, 1.0, 2.0}, "file1-hc-T3m10.3p200x300FC.svg"},
 	}
 	for i, td := range testdata {
 		filename := buildSVGfilename(td.opts)
@@ -94,13 +94,16 @@ func TestTraceContour(t *testing.T) {
 	}
 	testdata := []testdataT{ // Don't forget that no compression happens for these cases
 		{"tests/test0.png", ContourT{
-			{0.998, 1.500}, {1.500, 0.998}, {2.500, 0.998}, {3.002, 1.500}, {3.002, 2.500}, {2.500, 3.002}, {1.500, 3.002}, {0.998, 2.500}, {0.998, 1.500},
+			{0.998, 1.500}, {1.500, 0.998}, {2.500, 0.998}, {3.002, 1.500}, {3.002, 2.500}, {2.500, 3.002}, {1.500, 3.002}, {0.998, 2.500},
+			{0.998, 1.500},
 		}, PointT{1, 1}},
 		{"tests/test1.png", ContourT{
-			{0.998, 1.500}, {1.500, 0.998}, {2.500, 0.998}, {3.500, 0.998}, {4.002, 1.500}, {3.500, 2.002}, {3.002, 2.500}, {2.500, 3.002}, {2.002, 3.500}, {1.500, 4.002}, {0.998, 3.500}, {0.998, 2.500}, {0.998, 1.500},
+			{0.998, 1.500}, {1.500, 0.998}, {2.500, 0.998}, {3.500, 0.998}, {4.002, 1.500}, {3.500, 2.002}, {3.002, 2.500}, {2.500, 3.002},
+			{2.002, 3.500}, {1.500, 4.002}, {0.998, 3.500}, {0.998, 2.500}, {0.998, 1.500},
 		}, PointT{1, 1}},
 		{"tests/test4.png", ContourT{
-			{0.998, 0.500}, {1.500, -0.001}, {2.002, 0.500}, {2.500, 0.998}, {3.002, 1.500}, {3.002, 2.500}, {2.500, 3.002}, {2.002, 3.500}, {1.500, 4.001}, {0.998, 3.500}, {0.500, 3.002}, {-0.001, 2.500}, {-0.001, 1.500}, {0.500, 0.998}, {0.998, 0.500},
+			{0.998, 0.500}, {1.500, -0.001}, {2.002, 0.500}, {2.500, 0.998}, {3.002, 1.500}, {3.002, 2.500}, {2.500, 3.002}, {2.002, 3.500},
+			{1.500, 4.001}, {0.998, 3.500}, {0.500, 3.002}, {-0.001, 2.500}, {-0.001, 1.500}, {0.500, 0.998}, {0.998, 0.500},
 		}, PointT{1, 0}},
 	}
 	for _, td := range testdata {
@@ -109,7 +112,6 @@ func TestTraceContour(t *testing.T) {
 		if err != nil {
 			t.Errorf("Input file %s not found\n", td.infile)
 		}
-		//		got, _ := traceContour(img, width, height, 128, td.start, nil)
 		got, _ := traceContour(img, width, height, 128, td.start, nil)
 		if !got.Equal(td.contour) {
 			t.Errorf("Wrong result for %s start %v:\n\twanted=%v\n\t   got %v\n", td.infile, td.start, td.contour, got)
@@ -204,6 +206,30 @@ func TestContourFinder(t *testing.T) {
 	}
 }
 
+func TestCalcSizes(t *testing.T) {
+	fmt.Println("TestCalcSizes")
+	type testdataT struct {
+		plot      RectangleT
+		margin    float64
+		paper     RectangleT
+		translate RectangleT
+		scale     float64
+	}
+	testdata := []testdataT{
+		{RectangleT{400, 400}, 00, RectangleT{400, 400}, RectangleT{0, 0}, 1},
+		{RectangleT{100, 200}, 50, RectangleT{400, 400}, RectangleT{125, 50}, 1.5},
+		{RectangleT{600, 200}, 40, RectangleT{400, 400}, RectangleT{40.0000, 146.6667}, 0.5333},
+		{RectangleT{600, 400}, 15, RectangleT{297, 210}, RectangleT{15, 16}, 0.445},
+		{RectangleT{6, 4}, 15, RectangleT{297, 210}, RectangleT{15, 16}, 44.5},
+	}
+	for i, td := range testdata {
+		translate, scale := calcSizes(td.plot, td.margin, td.paper)
+		if !translate.Equal(td.translate) || !almostEqual(scale, td.scale, 0.001) {
+			t.Errorf("(%d) Wrong result: wanted %v, %g   got %v, %g", i, td.translate, td.scale, translate, scale)
+		}
+	}
+}
+
 func TestCreateSVG(t *testing.T) {
 	fmt.Println("TestCreateSVG")
 	type testdataT struct {
@@ -217,10 +243,10 @@ func TestCreateSVG(t *testing.T) {
 	}
 	testdata := []testdataT{ // Compression is done for SVG contours
 		{"tests/test3.png", "tests/test3-hc-t128m15pA4L.svg", []int{128}, 15, "A4L", false,
-			"<svg width=\"297mm\" height=\"210mm\" viewBox=\"0 0 297 210\" style=\"background-color:white\" xmlns=\"http://www.w3.org/2000/svg\" xmlns:inkscape=\"http://www.inkscape.org/namespaces/inkscape\" encoding=\"UTF-8\" >\n<g stroke=\"black\" stroke-width=\"0.1250\" stroke-linecap=\"round\" stroke-linejoin=\"round\" fill=\"none\" transform=\"translate(58.5,15) scale(8.0000)\">\n<g inkscape:groupmode=\"layer\" inkscape:label=\"128\" stroke=\"rgb(0%, 0%, 0%)\">\n<polyline points=\"1.00,0.50 1.50,0.00 \" />\n<polyline points=\"2.50,0.00 3.00,0.50 3.00,1.50 1.50,3.00 0.50,3.00 0.00,2.50 \" />\n<polyline points=\"0.00,1.50 1.00,0.50 \" />\n<polyline points=\"4.00,0.50 4.50,0.00 \" />\n<polyline points=\"0.00,4.50 0.50,4.00 2.50,4.00 4.00,2.50 4.00,0.50 \" />\n<polygon  points=\"5.00,4.50 5.50,4.00 6.00,4.50 6.00,5.50 5.50,6.00 4.50,6.00 4.00,5.50 5.00,4.50 \" />\n</g>\n</g>\n</svg>\n",
+			"<svg width=\"297mm\" height=\"210mm\" viewBox=\"0 0 297 210\" style=\"background-color:white\" xmlns=\"http://www.w3.org/2000/svg\" xmlns:inkscape=\"http://www.inkscape.org/namespaces/inkscape\" encoding=\"UTF-8\" >\n<g stroke=\"black\" stroke-width=\"0.0444\" stroke-linecap=\"round\" stroke-linejoin=\"round\" fill=\"none\" transform=\"translate(58.5,15) scale(22.5000)\">\n<g inkscape:groupmode=\"layer\" inkscape:label=\"128\" stroke=\"rgb(0%, 0%, 0%)\">\n<polyline points=\"1.00,0.50 1.50,0.00 \" />\n<polyline points=\"2.50,0.00 3.00,0.50 3.00,1.50 1.50,3.00 0.50,3.00 0.00,2.50 \" />\n<polyline points=\"0.00,1.50 1.00,0.50 \" />\n<polyline points=\"4.00,0.50 4.50,0.00 \" />\n<polyline points=\"0.00,4.50 0.50,4.00 2.50,4.00 4.00,2.50 4.00,0.50 \" />\n<polygon  points=\"5.00,4.50 5.50,4.00 6.00,4.50 6.00,5.50 5.50,6.00 4.50,6.00 4.00,5.50 5.00,4.50 \" />\n</g>\n</g>\n</svg>\n",
 		},
 		{"tests/test4.png", "tests/test4-hc-t100,200m15pA4PC.svg", []int{100, 200}, 15, "A4P", true,
-			"<svg width=\"210mm\" height=\"297mm\" viewBox=\"0 0 210 297\" style=\"background-color:white\" xmlns=\"http://www.w3.org/2000/svg\" xmlns:inkscape=\"http://www.inkscape.org/namespaces/inkscape\" encoding=\"UTF-8\" >\n<g stroke=\"black\" stroke-width=\"0.1250\" stroke-linecap=\"round\" stroke-linejoin=\"round\" fill=\"none\" transform=\"translate(15,88.5) scale(8.0000)\">\n<clipPath id=\"clip1\" ><rect width=\"6\" height=\"4\" /></clipPath>\n<g inkscape:groupmode=\"layer\" inkscape:label=\"100\" stroke=\"rgb(0%, 0%, 0%)\">\n<path clip-path=\"url(#clip1)\"  d=\"M 1.11,0.50 L 1.50,-0.00 L 1.89,0.50 L 2.89,1.50 L 2.89,2.50 L 1.89,3.50 L 1.50,4.00 L 1.11,3.50 L 0.50,2.89 L -0.00,2.50 L -0.00,1.50 L 0.50,1.11 L 1.11,0.50 Z M 4.11,0.50 L 4.50,-0.00 L 5.50,-0.00 L 6.00,0.50 L 6.00,1.50 L 5.50,1.89 L 4.50,1.89 L 4.11,1.50 L 4.11,0.50 Z M 4.11,3.50 L 4.50,3.11 L 4.89,3.50 L 4.50,4.00 L 4.11,3.50 Z \" />\n</g>\n<g inkscape:groupmode=\"layer\" inkscape:label=\"200\" stroke=\"rgb(0%, 0%, 0%)\">\n<path clip-path=\"url(#clip1)\"  d=\"M 0.72,0.50 L 1.50,-0.00 L 2.28,0.50 L 3.28,1.50 L 3.28,2.50 L 2.28,3.50 L 1.50,4.00 L 0.72,3.50 L 0.50,3.28 L -0.00,2.50 L -0.00,1.50 L 0.50,0.72 L 0.72,0.50 Z M 3.72,0.50 L 4.50,-0.00 L 5.50,-0.00 L 6.00,0.50 L 6.00,1.50 L 5.50,2.28 L 4.50,2.28 L 3.72,1.50 L 3.72,0.50 Z M 3.72,3.50 L 4.50,2.72 L 5.28,3.50 L 4.50,4.00 L 3.72,3.50 Z \" />\n</g>\n</g>\n</svg>\n",
+			"<svg width=\"210mm\" height=\"297mm\" viewBox=\"0 0 210 297\" style=\"background-color:white\" xmlns=\"http://www.w3.org/2000/svg\" xmlns:inkscape=\"http://www.inkscape.org/namespaces/inkscape\" encoding=\"UTF-8\" >\n<g stroke=\"black\" stroke-width=\"0.0333\" stroke-linecap=\"round\" stroke-linejoin=\"round\" fill=\"none\" transform=\"translate(15,88.5) scale(30.0000)\">\n<clipPath id=\"clip1\" ><rect width=\"6\" height=\"4\" /></clipPath>\n<g inkscape:groupmode=\"layer\" inkscape:label=\"100\" stroke=\"rgb(0%, 0%, 0%)\">\n<path clip-path=\"url(#clip1)\"  d=\"M 1.11,0.50 L 1.50,-0.00 L 1.89,0.50 L 2.89,1.50 L 2.89,2.50 L 1.89,3.50 L 1.50,4.00 L 1.11,3.50 L 0.50,2.89 L -0.00,2.50 L -0.00,1.50 L 0.50,1.11 L 1.11,0.50 Z M 4.11,0.50 L 4.50,-0.00 L 5.50,-0.00 L 6.00,0.50 L 6.00,1.50 L 5.50,1.89 L 4.50,1.89 L 4.11,1.50 L 4.11,0.50 Z M 4.11,3.50 L 4.50,3.11 L 4.89,3.50 L 4.50,4.00 L 4.11,3.50 Z \" />\n</g>\n<g inkscape:groupmode=\"layer\" inkscape:label=\"200\" stroke=\"rgb(0%, 0%, 0%)\">\n<path clip-path=\"url(#clip1)\"  d=\"M 0.72,0.50 L 1.50,-0.00 L 2.28,0.50 L 3.28,1.50 L 3.28,2.50 L 2.28,3.50 L 1.50,4.00 L 0.72,3.50 L 0.50,3.28 L -0.00,2.50 L -0.00,1.50 L 0.50,0.72 L 0.72,0.50 Z M 3.72,0.50 L 4.50,-0.00 L 5.50,-0.00 L 6.00,0.50 L 6.00,1.50 L 5.50,2.28 L 4.50,2.28 L 3.72,1.50 L 3.72,0.50 Z M 3.72,3.50 L 4.50,2.72 L 5.28,3.50 L 4.50,4.00 L 3.72,3.50 Z \" />\n</g>\n</g>\n</svg>\n",
 		},
 	}
 	for _, td := range testdata {

@@ -27,6 +27,10 @@ been found already -- comes straight from Foxall's code.
 will create a file called thingy-hc-t128m15pA4L.svg.  The numbers in the output SVG file name indicate
 the values used for the threshold, margin, and paper options -- in this case, the default values.
 
+## Details
+
+Contours at each level are grouped into Inkscape/Axidraw-style layers with the threshold as label.  The frame is in layer 0.
+
 ### Options
 
 * `--threshold | -t <value[,...]>`
