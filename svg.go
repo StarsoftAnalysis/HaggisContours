@@ -11,9 +11,12 @@ import (
 )
 
 type SVGfile struct {
-	currentLayer int
-	file         *os.File
-	filename     string
+	currentLayer    int
+	file            *os.File
+	filename        string
+	pathCounter     int
+	polygonCounter  int
+	polylineCounter int
 }
 
 func (svg *SVGfile) write(s string) {
@@ -24,7 +27,8 @@ func (svg *SVGfile) write(s string) {
 // Not used:
 func (svg *SVGfile) line(fromX, fromY, toX, toY float64) {
 	// Write a line path; coordinates are ... scaling is done in svg.openStart
-	svg.write(fmt.Sprintf("<path d=\"M %6.3f,%6.3f L %6.3f,%6.3f\" />\n", fromX, fromY, toX, toY))
+	svg.write(fmt.Sprintf("<path id=\"%d\" d=\"M %6.3f,%6.3f L %6.3f,%6.3f\" />\n", svg.pathCounter, fromX, fromY, toX, toY))
+	svg.pathCounter += 1
 }
 
 func (svg *SVGfile) polygon(contour ContourT, args string) {
@@ -32,7 +36,8 @@ func (svg *SVGfile) polygon(contour ContourT, args string) {
 	// e.g.  <polygon points="100,100 150,25 150,75 200,0" fill="none" stroke="black" />
 	//svg.write(fmt.Sprintf("<!-- contour: %v -->\n", contour))
 	//fmt.Printf("polygon: %v\n", contour)
-	svg.write(fmt.Sprintf("<polygon %s points=\"", args))
+	svg.write(fmt.Sprintf("<polygon id=\"%d\" %s points=\"", svg.polygonCounter, args))
+	svg.polygonCounter += 1
 	for _, p := range contour {
 		svg.write(fmt.Sprintf("%.2f,%.2f ", p.x, p.y))
 	}
@@ -94,7 +99,8 @@ func offImage(p Point64T, width, height int) bool {
 // Given a contour (a slice of coordinates), make them into a polyline
 func (svg *SVGfile) polyline(contour ContourT) {
 	//fmt.Printf("polyline: %v\n", contour)
-	svg.write(fmt.Sprint("<polyline points=\""))
+	svg.write(fmt.Sprintf("<polyline id=\"%d\" points=\"", svg.polylineCounter))
+	svg.polylineCounter += 1
 	for _, p := range contour {
 		svg.write(fmt.Sprintf("%.2f,%.2f ", p.x, p.y))
 	}
@@ -162,7 +168,8 @@ func (svg *SVGfile) plotContour(contour ContourT, width, height int) {
 }
 
 func (svg *SVGfile) closedPathStart(args string) {
-	svg.write(fmt.Sprintf("<path clip-path=\"url(#clip1)\" %s d=\"", args)) // FIXME better name for clip1 ?
+	svg.write(fmt.Sprintf("<path id=\"%d\" clip-path=\"url(#clip1)\" %s d=\"", svg.pathCounter, args)) // FIXME better name for clip1 ?
+	svg.pathCounter += 1
 }
 
 func (svg *SVGfile) closedPathStop() {
@@ -188,26 +195,25 @@ func (svg *SVGfile) plotContourClip(contour ContourT, width, height int) {
 	svg.closedPathLoop(ccontour, args)
 }
 
-func calcSizes(plot RectangleT, margin float64, paper RectangleT) (RectangleT, float64) {
-	// Apply translation and scale to whole plot: but don't magnify too much
+func calcSizes(image RectangleT, margin float64, paper RectangleT, framewidth float64) (RectangleT, float64) {
 	//g := fmt.Sprintf("<g transform=\"translate(%g,%g) scale(%g)\" stroke=\"black\" stroke-width=\"1\" stroke-linecap=\"round\" stroke-linejoin=\"round\" fill=\"none\">\n",
-	printWidth := paper.width - 2*margin
-	printHeight := paper.height - 2*margin
-	imageAspect := float64(plot.width) / float64(plot.height)
+	printWidth := paper.width - 2*margin - 2*framewidth
+	printHeight := paper.height - 2*margin - 2*framewidth
+	imageAspect := float64(image.width) / float64(image.height)
 	printAspect := printWidth / printHeight
-	//fmt.Printf("print %g x %g  plot %g x %g   pA %g   iA  %g\n", printWidth, printHeight, plot.width, plot.height, printAspect, imageAspect)
+	//fmt.Printf("print %g x %g  image %g x %g   pA %g   iA  %g\n", printWidth, printHeight, image.width, image.height, printAspect, imageAspect)
 	var scale float64
 	var translate RectangleT
 	if imageAspect > printAspect {
-		scale = printWidth / float64(plot.width)
+		scale = printWidth / float64(image.width)
 		//fmt.Println("scaling width")
-		translate.width = margin
-		translate.height = (paper.height - float64(plot.height)*scale) / 2
+		translate.width = margin + framewidth
+		translate.height = (paper.height - float64(image.height)*scale) / 2
 	} else {
-		scale = printHeight / float64(plot.height)
+		scale = printHeight / float64(image.height)
 		//fmt.Println("scaling height")
-		translate.width = (paper.width - float64(plot.width)*scale) / 2
-		translate.height = margin
+		translate.width = (paper.width - float64(image.width)*scale) / 2
+		translate.height = margin + framewidth
 	}
 	//fmt.Printf("translate = %g,%g  scale=%g\n", translate.width, translate.height, scale)
 	return translate, scale
@@ -233,15 +239,15 @@ func (svg *SVGfile) openStart(filename string, opts OptsT) {
 
 	// Dev only: show paper limits
 	if opts.dev {
-		paperBox := fmt.Sprintf("<rect width=\"%g\" height=\"%g\" stroke=\"blue\" stroke-dasharray=\"4\" fill=\"none\"/>\n", opts.paperSize.width, opts.paperSize.height)
+		paperBox := fmt.Sprintf("<rect id=\"papersize\" width=\"%g\" height=\"%g\" stroke=\"blue\" stroke-dasharray=\"4\" fill=\"none\"/>\n", opts.paperSize.width, opts.paperSize.height)
 		svg.write(paperBox)
 	}
 
-	translate, scale := calcSizes(RectangleT{float64(opts.width), float64(opts.height)}, opts.margin, opts.paperSize)
+	translate, scale := calcSizes(RectangleT{float64(opts.width), float64(opts.height)}, opts.margin, opts.paperSize, opts.framewidth)
 
 	// Dev only: show plot limits
 	if opts.dev {
-		plotBox := fmt.Sprintf("<rect width=\"%g\" height=\"%g\" x=\"%g\" y=\"%g\" stroke=\"green\" stroke-dasharray=\"3\" fill=\"none\"/>\n",
+		plotBox := fmt.Sprintf("<rect id=\"plotsize\" width=\"%g\" height=\"%g\" x=\"%g\" y=\"%g\" stroke=\"green\" stroke-dasharray=\"3\" fill=\"none\"/>\n",
 			float64(opts.width)*scale, float64(opts.height)*scale, translate.width, translate.height)
 		svg.write(plotBox)
 	}
@@ -252,20 +258,50 @@ func (svg *SVGfile) openStart(filename string, opts OptsT) {
 	g := fmt.Sprintf("<g stroke=\"black\" stroke-width=\"%.4f\" stroke-linecap=\"round\" stroke-linejoin=\"round\" fill=\"none\" %s>\n", opts.linewidth/scale, transform)
 	svg.write(g)
 
+	// Clippage is the amount to be taken off the edge of the image to hide the off-image
+	// parts of contour polygons (while still allowing them to be filled with colour).
+	// Ideally, clippage would be used in calcSizes, but that goes circular.
+	// It's only an issue with very wide contour lines.
+	clippage := 0.0
+	if opts.clip {
+		clippage = opts.linewidth / 2 / scale
+	}
+
 	if opts.clip { // inside the transformed group
-		clipString := fmt.Sprintf("<defs><clipPath id=\"clip1\" ><rect width=\"%v\" height=\"%v\" /></clipPath></defs>\n", opts.width, opts.height)
+		/* old: */ //clipString := fmt.Sprintf("<defs><clipPath id=\"clip1\" ><rect width=\"%v\" height=\"%v\" x=\"%v\" y=\"%v\" /></clipPath></defs>\n", opts.width, opts.height, 0, 0)
+		//clipString := fmt.Sprintf("<defs><clipPath id=\"clip1\" ><rect width=\"%v\" height=\"%v\" x=\"%v\" y=\"%v\" /></clipPath></defs>\n", float64(opts.width)-2*opts.linewidth, float64(opts.height)-2*opts.linewidth, opts.linewidth, opts.linewidth)
+		//clipString := fmt.Sprintf("<defs><clipPath id=\"clip1\" ><rect id=\"cliprect\" width=\"%v\" height=\"%v\" x=\"%v\" y=\"%v\" /></clipPath></defs>\n", float64(opts.width)-2*opts.linewidth, float64(opts.height)-2*opts.linewidth, opts.linewidth, opts.linewidth)
+		clipString := fmt.Sprintf("<defs><clipPath id=\"clip1\" ><rect id=\"cliprect\" width=\"%.4f\" height=\"%.4f\" x=\"%.4f\" y=\"%.4f\" /></clipPath></defs>\n", float64(opts.width)-clippage*2, float64(opts.height)-clippage*2, clippage, clippage)
 		svg.write(clipString)
 	}
 
+	//fmt.Printf("lw=%v  scale=%v   clippage=%v\n", opts.linewidth, scale, clippage)
 	if opts.frame {
-		svg.layer(0)
-		// stroke-width is 'descaled' to result in what the user asked for
-		frame := fmt.Sprintf("<rect width=\"%d\" height=\"%d\" stroke-width=\"%.4f\" />\n", opts.width, opts.height, opts.framewidth/scale)
+		svg.layer(0, "frame")
+		// stroke-width is 'descaled' to result in what the user asked for:
+		fwdescaled := opts.framewidth / scale
+		w := float64(opts.width) + fwdescaled
+		h := float64(opts.height) + fwdescaled
+		// frame is outside the image, so shifted up and left a bit:
+		x := -fwdescaled / 2
+		y := -fwdescaled / 2
+		if opts.clip {
+			// adjust frame size and position to fit clipped image
+			w -= 2 * clippage
+			h -= 2 * clippage
+			x += clippage
+			y += clippage
+		}
+		//frame := fmt.Sprintf("<rect id=\"frame\" width=\"%d\" height=\"%d\" stroke-width=\"%.4f\" />\n", opts.width, opts.height, opts.framewidth/scale)
+		frame := fmt.Sprintf("<rect id=\"frame\" width=\"%.4f\" height=\"%.4f\" x=\"%.4f\" y=\"%.4f\" stroke-width=\"%.4f\" />\n", w, h, x, y, fwdescaled)
 		//fmt.Print(frame)
 		svg.write(frame)
+		// FIXME image is in frame layer -- OK?  if not, need to call endLayer, and have it set currentLayer to -1
+		//   and if no frame, the image is not in any layer -- what will axidraw do with it?  maybe
 	}
 	if opts.image {
-		image := fmt.Sprintf("<image href=\"%s\" width=\"%d\" height=\"%d\" />\n", path.Base(opts.infile), opts.width, opts.height)
+		// CHECK clip image same as plot?
+		image := fmt.Sprintf("<image id=\"background\" href=\"%s\" width=\"%d\" height=\"%d\" clip-path=\"url(#clip1)\" />\n", path.Base(opts.infile), opts.width, opts.height)
 		//fmt.Print(image)
 		svg.write(image)
 	}
@@ -278,8 +314,8 @@ func (svg *SVGfile) stopSave() {
 	fmt.Printf("Created SVG file %q\n", svg.filename)
 }
 
-func (svg *SVGfile) startLayer(l int) {
-	svg.write(fmt.Sprintf("<g inkscape:groupmode=\"layer\" inkscape:label=\"%d\" stroke=\"black\">\n", l))
+func (svg *SVGfile) startLayer(l int, label string) {
+	svg.write(fmt.Sprintf("<g inkscape:groupmode=\"layer\" inkscape:label=\"%d %s\" stroke=\"black\">\n", l, label))
 	svg.currentLayer = l
 }
 func (svg *SVGfile) endLayer() {
@@ -287,11 +323,11 @@ func (svg *SVGfile) endLayer() {
 		svg.write("</g>\n") // end of stroke and layer group
 	}
 }
-func (svg *SVGfile) layer(l int) {
+func (svg *SVGfile) layer(l int, label string) {
 	if l == svg.currentLayer {
 		// nothing to do
 	} else {
 		svg.endLayer()
-		svg.startLayer(l)
+		svg.startLayer(l, label)
 	}
 }

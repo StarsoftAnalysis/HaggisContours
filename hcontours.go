@@ -305,7 +305,7 @@ func createSVG(opts OptsT) string {
 	svgFilename := buildSVGfilename(opts)
 	svgF.openStart(svgFilename, opts)
 	for _, threshold := range opts.thresholds {
-		svgF.layer(threshold)
+		svgF.layer(threshold, "contour")
 		contours := contourFinder(img, opts.width, opts.height, threshold, opts.clip, svgF)
 		fmt.Printf("%d contours found at threshold %d\n", len(contours), threshold)
 	}

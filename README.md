@@ -1,6 +1,6 @@
 # HaggisContours
 
-A method of converting a heightmap (or similar input) to a set of contours, using the wild haggis algorithm.
+Haggis Contours is a method of converting a heightmap (or similar input) to a set of contours, using the wild haggis algorithm.
 
 ![Go workflow](https://github.com/starsoftanalysis/HaggisContours/actions/workflows/go.yml/badge.svg)
 
@@ -31,6 +31,8 @@ the values used for the threshold, margin, and paper options -- in this case, th
 
 Contours at each level are grouped into Inkscape/Axidraw-style layers with the threshold as label.  The frame is in layer 0.
 
+
+
 ### Options
 
 * `--threshold | -t <value[,...]>`
@@ -57,9 +59,12 @@ Default A4L. Examples: `-p A3L` `--paper 200x300` (mm) `-p 7x5` (inches)
 
 * `--frame | -f`
 Draw a simple frame around the SVG image.  Default false. Example `-f`
+Note that the frame sits outside the SVG image: a wide frame will not obscure any of the image, but may mean that the image size is reduced so that frame and image 
+still fit within the paper size and margin.
 
 * `--framewidth`
 The line width used for drawing the frame, in millimetres.  Default `1.0`.  Examples: `--framewidth 3`, `--framewidth 0.8`
+The result will look a bit wrong if the --framewidth is less than the --linewidth.
 
 * `--image | -i`
 Use the original image as a background in the SVG image.  Default false. Example: `--image`
