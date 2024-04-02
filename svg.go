@@ -215,6 +215,7 @@ func calcSizes(plot RectangleT, margin float64, paper RectangleT) (RectangleT, f
 
 func (svg *SVGfile) openStart(filename string, opts OptsT) {
 	svg.filename = filename
+	svg.currentLayer = -1 // no layer open
 	fh, err := os.Create(svg.filename)
 	if err != nil {
 		log.Fatalf("Unable to open SVG file %q - %s", svg.filename, err)
@@ -247,7 +248,7 @@ func (svg *SVGfile) openStart(filename string, opts OptsT) {
 
 	transform := fmt.Sprintf("transform=\"translate(%g,%g) scale(%.4f)\"", translate.width, translate.height, scale)
 
-	// stroke-width is 'unscaled' to result in what the user asked for
+	// stroke-width is 'descaled' to result in what the user asked for
 	g := fmt.Sprintf("<g stroke=\"black\" stroke-width=\"%.4f\" stroke-linecap=\"round\" stroke-linejoin=\"round\" fill=\"none\" %s>\n", opts.linewidth/scale, transform)
 	svg.write(g)
 
@@ -257,7 +258,8 @@ func (svg *SVGfile) openStart(filename string, opts OptsT) {
 	}
 
 	if opts.frame {
-		// stroke-width is 'unscaled' to result in what the user asked for
+		svg.layer(0)
+		// stroke-width is 'descaled' to result in what the user asked for
 		frame := fmt.Sprintf("<rect width=\"%d\" height=\"%d\" stroke-width=\"%.4f\" />\n", opts.width, opts.height, opts.framewidth/scale)
 		//fmt.Print(frame)
 		svg.write(frame)
@@ -277,13 +279,11 @@ func (svg *SVGfile) stopSave() {
 }
 
 func (svg *SVGfile) startLayer(l int) {
-	// l will not be 0 (that would plot white lines)
-	//grey := 100 - int(math.Round(opts.penBandwidth*float64(l)*100.0))
-	svg.write(fmt.Sprintf("<g inkscape:groupmode=\"layer\" inkscape:label=\"%d\" stroke=\"rgb(%d%%, %d%%, %d%%)\">\n", l, black, black, black))
+	svg.write(fmt.Sprintf("<g inkscape:groupmode=\"layer\" inkscape:label=\"%d\" stroke=\"black\">\n", l))
 	svg.currentLayer = l
 }
 func (svg *SVGfile) endLayer() {
-	if svg.currentLayer > 0 {
+	if svg.currentLayer >= 0 {
 		svg.write("</g>\n") // end of stroke and layer group
 	}
 }
