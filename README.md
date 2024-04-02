@@ -76,7 +76,7 @@ Add extra bits to the SVG -- intended for developer use only.  Default false.
 
 <img alt="Sample heightmap, taken from Wikipedia, shown as a greyscale image" src="examples/Heightmap.png" title="Input image" width=45%>&nbsp;&nbsp;&nbsp;&nbsp;<img alt="The contours generated from the heightmap" src="examples/Heightmap-hc-t64,128,192m0p200x200F.svg" title="Created SVG image" width=45%>
 
-`hcontours examples/beach.png -t 32,64,96,128,160,192,224 --paper A4L --image` produces this:
+`hcontours examples/beach.png -t 32,64,96,128,160,192,224 --paper A4L --image --linewidth 0.3` produces this:
 
 <img alt="Photo of breakwaters on a beach" src="examples/beach.png" title="Input image" width=45%>&nbsp;&nbsp;&nbsp;&nbsp;<img alt="The same photo after processing, showing as the outlines of shapes" src="examples/beach-hc-t32,64,96,128,160,192,224m15pA4LI.png" title="Created SVG image (converted to PNG)" width=45%>
 
