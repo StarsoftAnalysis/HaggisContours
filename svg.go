@@ -253,7 +253,7 @@ func (svg *SVGfile) openStart(filename string, opts OptsT) {
 	svg.write(g)
 
 	if opts.clip { // inside the transformed group
-		clipString := fmt.Sprintf("<clipPath id=\"clip1\" ><rect width=\"%v\" height=\"%v\" /></clipPath>\n", opts.width, opts.height)
+		clipString := fmt.Sprintf("<defs><clipPath id=\"clip1\" ><rect width=\"%v\" height=\"%v\" /></clipPath></defs>\n", opts.width, opts.height)
 		svg.write(clipString)
 	}
 
