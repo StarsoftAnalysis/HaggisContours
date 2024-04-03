@@ -1,5 +1,20 @@
 // svg.go
-// Part of hcontours.go
+
+// This file is part of hcontours -- HarrisContours.
+// Copyright (C) 2024 Chris Dennis, chris@starsoftanalysis.co.uk
+//
+// hcontours is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 package main
 
@@ -168,7 +183,7 @@ func (svg *SVGfile) plotContour(contour ContourT, width, height int) {
 }
 
 func (svg *SVGfile) closedPathStart(args string) {
-	svg.write(fmt.Sprintf("<path id=\"%d\" clip-path=\"url(#clip1)\" %s d=\"", svg.pathCounter, args)) // FIXME better name for clip1 ?
+	svg.write(fmt.Sprintf("<path id=\"%d\" clip-path=\"url(#clip1)\" %s d=\"", svg.pathCounter, args))
 	svg.pathCounter += 1
 }
 
@@ -268,16 +283,15 @@ func (svg *SVGfile) openStart(filename string, opts OptsT) {
 	}
 
 	if opts.clip { // inside the transformed group
-		/* old: */ //clipString := fmt.Sprintf("<defs><clipPath id=\"clip1\" ><rect width=\"%v\" height=\"%v\" x=\"%v\" y=\"%v\" /></clipPath></defs>\n", opts.width, opts.height, 0, 0)
-		//clipString := fmt.Sprintf("<defs><clipPath id=\"clip1\" ><rect width=\"%v\" height=\"%v\" x=\"%v\" y=\"%v\" /></clipPath></defs>\n", float64(opts.width)-2*opts.linewidth, float64(opts.height)-2*opts.linewidth, opts.linewidth, opts.linewidth)
-		//clipString := fmt.Sprintf("<defs><clipPath id=\"clip1\" ><rect id=\"cliprect\" width=\"%v\" height=\"%v\" x=\"%v\" y=\"%v\" /></clipPath></defs>\n", float64(opts.width)-2*opts.linewidth, float64(opts.height)-2*opts.linewidth, opts.linewidth, opts.linewidth)
 		clipString := fmt.Sprintf("<defs><clipPath id=\"clip1\" ><rect id=\"cliprect\" width=\"%.4f\" height=\"%.4f\" x=\"%.4f\" y=\"%.4f\" /></clipPath></defs>\n", float64(opts.width)-clippage*2, float64(opts.height)-clippage*2, clippage, clippage)
 		svg.write(clipString)
 	}
 
+	if opts.framewidth > 0.0 || opts.image {
+		svg.layer(0, "frame/background")
+	}
 	//fmt.Printf("lw=%v  scale=%v   clippage=%v\n", opts.linewidth, scale, clippage)
 	if opts.framewidth > 0.0 {
-		svg.layer(0, "frame")
 		// stroke-width is 'descaled' to result in what the user asked for:
 		fwdescaled := opts.framewidth / scale
 		w := float64(opts.width) + fwdescaled
@@ -296,8 +310,6 @@ func (svg *SVGfile) openStart(filename string, opts OptsT) {
 		frameString := fmt.Sprintf("<rect id=\"frame\" width=\"%.4f\" height=\"%.4f\" x=\"%.4f\" y=\"%.4f\" stroke-width=\"%.4f\" />\n", w, h, x, y, fwdescaled)
 		//fmt.Print(frameString)
 		svg.write(frameString)
-		// FIXME image is in frame layer -- OK?  if not, need to call endLayer, and have it set currentLayer to -1
-		//   and if no frame, the image is not in any layer -- what will axidraw do with it?  maybe
 	}
 	if opts.image {
 		// CHECK clip image same as plot?

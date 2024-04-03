@@ -1,5 +1,5 @@
 # Workflow for hcontours
-name: Go
+name: Go Build and Test
 on:
   push:
     branches: [ "main" ]
@@ -13,7 +13,8 @@ jobs:
     - name: Set up Go
       uses: actions/setup-go@v4
       with:
-        go-version: '1.22'
+        #go-version: '1.22'
+        go-version-file: 'go.mod'
     - name: Install dependencies
       run: |
         go get .
