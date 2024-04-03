@@ -1,21 +1,5 @@
 # Haggis Contours
 
-// This file is part of hcontours -- HarrisContours.
-// Copyright (C) 2024 Chris Dennis, chris@starsoftanalysis.co.uk
-//
-// hcontours is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
-//
-// You should have received a copy of the GNU General Public License
-// along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
 Haggis Contours is a method of converting a heightmap (or similar input) to a set of contours, using the wild haggis algorithm.
 
 ![Go workflow](https://github.com/starsoftanalysis/HaggisContours/actions/workflows/go.yml/badge.svg)
@@ -74,10 +58,10 @@ Default A4L. Examples: `-p A3L` `--paper 200x300` (mm) `-p 7x5` (inches)
 The line width used for drawing contours, in millimetres.  Default `0.5`.  Examples: `--linewidth 1`, `-l 2.54`
 
 * `--framewidth | -f <width>`
-The line width used for drawing the frame, in millimetres.  Default `0.0`, i.e. no frame.  Examples: `--framewidth 3`, `-f 0.8`
+The line width used for drawing the frame, in millimetres.  Default `0.0`, i.e. no frame.  Examples: `--framewidth 25.4`, `-f 0.8`
 Note that the frame sits outside the SVG image: a wide frame will not obscure any of the image, but may mean that the image size is reduced so that frame and image 
 still fit within the paper size and margin.
-The result will look a bit wrong if the --framewidth is less than the --linewidth.
+The result may look a bit tatty at the edges if the --framewidth is less than the --linewidth and --clip is not used.
 
 * `--image | -i`
 Use the original image as a background in the SVG image.  Default false. Example: `--image`
@@ -98,3 +82,20 @@ Add extra bits to the SVG file and command line output -- intended for developer
 
 <img alt="Photo of breakwaters on a beach" src="examples/beach.png" title="Input image" width=45%>&nbsp;&nbsp;&nbsp;&nbsp;<img alt="The same photo after processing, showing as the outlines of shapes" src="examples/beach-hc-t32,64,96,128,160,192,224m15pA4LI.png" title="Created SVG image (converted to PNG)" width=45%>
 
+## Licence 
+
+This file is part of hcontours -- HarrisContours.
+Copyright (C) 2024 Chris Dennis, chris@starsoftanalysis.co.uk
+
+hcontours is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
