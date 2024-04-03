@@ -237,16 +237,16 @@ func (svg *SVGfile) openStart(filename string, opts OptsT) {
 		opts.paperSize.width, opts.paperSize.height, viewbox, bg, xmlns)
 	svg.write(svgElement)
 
-	// Dev only: show paper limits
-	if opts.dev {
+	// Debug only: show paper limits
+	if opts.debug {
 		paperBox := fmt.Sprintf("<rect id=\"papersize\" width=\"%g\" height=\"%g\" stroke=\"blue\" stroke-dasharray=\"4\" fill=\"none\"/>\n", opts.paperSize.width, opts.paperSize.height)
 		svg.write(paperBox)
 	}
 
 	translate, scale := calcSizes(RectangleT{float64(opts.width), float64(opts.height)}, opts.margin, opts.paperSize, opts.framewidth)
 
-	// Dev only: show plot limits
-	if opts.dev {
+	// Debug only: show plot limits
+	if opts.debug {
 		plotBox := fmt.Sprintf("<rect id=\"plotsize\" width=\"%g\" height=\"%g\" x=\"%g\" y=\"%g\" stroke=\"green\" stroke-dasharray=\"3\" fill=\"none\"/>\n",
 			float64(opts.width)*scale, float64(opts.height)*scale, translate.width, translate.height)
 		svg.write(plotBox)

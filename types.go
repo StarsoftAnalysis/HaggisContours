@@ -164,7 +164,7 @@ type OptsT struct {
 	frame      bool
 	image      bool
 	clip       bool
-	dev        bool
+	debug      bool
 	linewidth  float64
 	framewidth float64
 }

@@ -231,7 +231,7 @@ func parseArgs(args []string) (OptsT, bool) {
 	pf.BoolVarP(&opts.frame, "frame", "f", false, "Draw a frame around the SVG image.")
 	pf.BoolVarP(&opts.image, "image", "i", false, "Use the original image as a background in the SVG image.")
 	pf.BoolVarP(&opts.clip, "clip", "c", false, "Clip borders of image, rather than breaking contours.")
-	pf.BoolVarP(&opts.dev, "dev", "d", false, "Add extra bits to the SVG -- intended for developer use only.")
+	pf.BoolVarP(&opts.debug, "debug", "d", false, "Add extra bits to the SVG -- intended for developer use only.")
 	pf.Float64Var(&opts.linewidth, "linewidth", 0.5, "Width of contour lines, in mm.")
 	pf.Float64Var(&opts.framewidth, "framewidth", 1.0, "Width of frame lines, in mm.")
 	pf.SortFlags = false
@@ -277,17 +277,13 @@ func buildSVGfilename(opts OptsT) string {
 	if opts.clip {
 		clipString = "C"
 	}
-	devString := ""
-	if opts.dev {
-		devString = "D"
-	}
 	tString := ""
 	if opts.tcount == -1 {
 		tString = "t" + intsToString(opts.thresholds)
 	} else {
 		tString = fmt.Sprintf("T%d", opts.tcount)
 	}
-	optString := fmt.Sprintf("-hc-%sm%gp%s%s%s%s%s", tString, opts.margin, opts.paper, frameString, imageString, clipString, devString)
+	optString := fmt.Sprintf("-hc-%sm%gp%s%s%s%s", tString, opts.margin, opts.paper, frameString, imageString, clipString)
 	ext := filepath.Ext(opts.infile)
 	filename := strings.TrimSuffix(opts.infile, ext) + optString + ".svg"
 	return filename

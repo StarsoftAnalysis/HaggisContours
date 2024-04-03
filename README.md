@@ -72,8 +72,8 @@ Use the original image as a background in the SVG image.  Default false. Example
 * `--clip | -c`
 Clip borders of image, rather than breaking contours.  This will hopefully allow filling contours, but won't work with AxiDraw. Default false.
 
-* `--dev | -d`
-Add extra bits to the SVG -- intended for developer use only.  Default false.
+* `--debug | -d`
+Add extra bits to the SVG file and command line output -- intended for developer use only.  Default false.
 
 ## Examples
 

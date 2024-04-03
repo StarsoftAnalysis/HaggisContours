@@ -74,7 +74,7 @@ func TestFilename(t *testing.T) {
 		framewidth float64
 	*/
 	testdata := []testdataT{
-		{OptsT{"file1.png", 100, 200, []int{44, 55}, -1, 15.0, "5x7", RectangleT{0, 0}, false, true, false, true, 1.0, 2.0}, "file1-hc-t44,55m15p5x7ID.svg"},
+		{OptsT{"file1.png", 100, 200, []int{44, 55}, -1, 15.0, "5x7", RectangleT{0, 0}, false, true, false, true, 1.0, 2.0}, "file1-hc-t44,55m15p5x7I.svg"},
 		{OptsT{"file1.png", 100, 200, []int{}, 3, 10.3, "200x300", RectangleT{0, 0}, true, false, true, false, 1.0, 2.0}, "file1-hc-T3m10.3p200x300FC.svg"},
 	}
 	for i, td := range testdata {
