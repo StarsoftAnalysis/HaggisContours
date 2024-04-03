@@ -66,7 +66,6 @@ func TestFilename(t *testing.T) {
 		margin     float64
 		paper      string
 		paperSize  RectangleT
-		frame      bool
 		image      bool
 		clip       bool
 		dev        bool
@@ -74,8 +73,8 @@ func TestFilename(t *testing.T) {
 		framewidth float64
 	*/
 	testdata := []testdataT{
-		{OptsT{"file1.png", 100, 200, []int{44, 55}, -1, 15.0, "5x7", RectangleT{0, 0}, false, true, false, true, 1.0, 2.0}, "file1-hc-t44,55m15p5x7I.svg"},
-		{OptsT{"file1.png", 100, 200, []int{}, 3, 10.3, "200x300", RectangleT{0, 0}, true, false, true, false, 1.0, 2.0}, "file1-hc-T3m10.3p200x300FC.svg"},
+		{OptsT{"file1.png", 100, 200, []int{44, 55}, -1, 15.0, "5x7", RectangleT{0, 0}, true, false, true, 1.0, 0.0}, "file1-hc-t44,55m15p5x7I.svg"},
+		{OptsT{"file1.png", 100, 200, []int{}, 3, 10.3, "200x300", RectangleT{0, 0}, false, true, false, 1.0, 2.0}, "file1-hc-T3m10.3p200x300F2C.svg"},
 	}
 	for i, td := range testdata {
 		filename := buildSVGfilename(td.opts)
@@ -239,22 +238,22 @@ func TestCreateSVG(t *testing.T) {
 		outfile    string
 		thresholds []int
 		margin     float64
-		frame      bool
+		framewidth float64
 		paper      string
 		clip       bool
 		wanted     string
 	}
 	testdata := []testdataT{ // Compression is done for SVG contours
-		{"tests/test3.png", "tests/test3-hc-t128m15pA4LF.svg", []int{128}, 15, true, "A4L", false,
-			"<svg width=\"297mm\" height=\"210mm\" viewBox=\"0 0 297 210\" style=\"background-color:white\" xmlns=\"http://www.w3.org/2000/svg\" xmlns:inkscape=\"http://www.inkscape.org/namespaces/inkscape\" encoding=\"UTF-8\" >\n<g stroke=\"black\" stroke-width=\"0.0455\" stroke-linecap=\"round\" stroke-linejoin=\"round\" fill=\"none\" transform=\"translate(60.5,17) scale(22.0000)\">\n<g inkscape:groupmode=\"layer\" inkscape:label=\"0 frame\" stroke=\"black\">\n<rect id=\"frame\" width=\"8.0909\" height=\"8.0909\" x=\"-0.0455\" y=\"-0.0455\" stroke-width=\"0.0909\" />\n</g>\n<g inkscape:groupmode=\"layer\" inkscape:label=\"128 contour\" stroke=\"black\">\n<polyline id=\"0\" points=\"1.00,0.50 1.50,0.00 \" />\n<polyline id=\"1\" points=\"2.50,0.00 3.00,0.50 3.00,1.50 1.50,3.00 0.50,3.00 0.00,2.50 \" />\n<polyline id=\"2\" points=\"0.00,1.50 1.00,0.50 \" />\n<polyline id=\"3\" points=\"4.00,0.50 4.50,0.00 \" />\n<polyline id=\"4\" points=\"0.00,4.50 0.50,4.00 2.50,4.00 4.00,2.50 4.00,0.50 \" />\n<polygon id=\"0\"  points=\"5.00,4.50 5.50,4.00 6.00,4.50 6.00,5.50 5.50,6.00 4.50,6.00 4.00,5.50 5.00,4.50 \" />\n</g>\n</g>\n</svg>\n",
+		{"tests/test3.png", "tests/test3-hc-t128m15pA4LF2.svg", []int{128}, 15, 2.0, "A4L", false,
+			"<svg width=\"297mm\" height=\"210mm\" viewBox=\"0 0 297 210\" style=\"background-color:white\" xmlns=\"http://www.w3.org/2000/svg\" xmlns:inkscape=\"http://www.inkscape.org/namespaces/inkscape\" encoding=\"UTF-8\" >\n<g stroke=\"black\" stroke-width=\"0.0455\" stroke-linecap=\"round\" stroke-linejoin=\"round\" fill=\"none\" transform=\"translate(60.5000,17.0000) scale(22.0000)\">\n<g inkscape:groupmode=\"layer\" inkscape:label=\"0 frame\" stroke=\"black\">\n<rect id=\"frame\" width=\"8.0909\" height=\"8.0909\" x=\"-0.0455\" y=\"-0.0455\" stroke-width=\"0.0909\" />\n</g>\n<g inkscape:groupmode=\"layer\" inkscape:label=\"128 contour\" stroke=\"black\">\n<polyline id=\"0\" points=\"1.00,0.50 1.50,0.00 \" />\n<polyline id=\"1\" points=\"2.50,0.00 3.00,0.50 3.00,1.50 1.50,3.00 0.50,3.00 0.00,2.50 \" />\n<polyline id=\"2\" points=\"0.00,1.50 1.00,0.50 \" />\n<polyline id=\"3\" points=\"4.00,0.50 4.50,0.00 \" />\n<polyline id=\"4\" points=\"0.00,4.50 0.50,4.00 2.50,4.00 4.00,2.50 4.00,0.50 \" />\n<polygon id=\"0\"  points=\"5.00,4.50 5.50,4.00 6.00,4.50 6.00,5.50 5.50,6.00 4.50,6.00 4.00,5.50 5.00,4.50 \" />\n</g>\n</g>\n</svg>\n",
 		},
-		{"tests/test4.png", "tests/test4-hc-t100,200m15pA4PC.svg", []int{100, 200}, 15, false, "A4P", true,
-			"<svg width=\"210mm\" height=\"297mm\" viewBox=\"0 0 210 297\" style=\"background-color:white\" xmlns=\"http://www.w3.org/2000/svg\" xmlns:inkscape=\"http://www.inkscape.org/namespaces/inkscape\" encoding=\"UTF-8\" >\n<g stroke=\"black\" stroke-width=\"0.0341\" stroke-linecap=\"round\" stroke-linejoin=\"round\" fill=\"none\" transform=\"translate(17,89.83333333333334) scale(29.3333)\">\n<defs><clipPath id=\"clip1\" ><rect id=\"cliprect\" width=\"5.9659\" height=\"3.9659\" x=\"0.0170\" y=\"0.0170\" /></clipPath></defs>\n<g inkscape:groupmode=\"layer\" inkscape:label=\"100 contour\" stroke=\"black\">\n<path id=\"0\" clip-path=\"url(#clip1)\"  d=\"M 1.11,0.50 L 1.50,-0.00 L 1.89,0.50 L 2.89,1.50 L 2.89,2.50 L 1.89,3.50 L 1.50,4.00 L 1.11,3.50 L 0.50,2.89 L -0.00,2.50 L -0.00,1.50 L 0.50,1.11 L 1.11,0.50 Z M 4.11,0.50 L 4.50,-0.00 L 5.50,-0.00 L 6.00,0.50 L 6.00,1.50 L 5.50,1.89 L 4.50,1.89 L 4.11,1.50 L 4.11,0.50 Z M 4.11,3.50 L 4.50,3.11 L 4.89,3.50 L 4.50,4.00 L 4.11,3.50 Z \" />\n</g>\n<g inkscape:groupmode=\"layer\" inkscape:label=\"200 contour\" stroke=\"black\">\n<path id=\"1\" clip-path=\"url(#clip1)\"  d=\"M 0.72,0.50 L 1.50,-0.00 L 2.28,0.50 L 3.28,1.50 L 3.28,2.50 L 2.28,3.50 L 1.50,4.00 L 0.72,3.50 L 0.50,3.28 L -0.00,2.50 L -0.00,1.50 L 0.50,0.72 L 0.72,0.50 Z M 3.72,0.50 L 4.50,-0.00 L 5.50,-0.00 L 6.00,0.50 L 6.00,1.50 L 5.50,2.28 L 4.50,2.28 L 3.72,1.50 L 3.72,0.50 Z M 3.72,3.50 L 4.50,2.72 L 5.28,3.50 L 4.50,4.00 L 3.72,3.50 Z \" />\n</g>\n</g>\n</svg>\n",
+		{"tests/test4.png", "tests/test4-hc-t100,200m15pA4PC.svg", []int{100, 200}, 15, 0.0, "A4P", true,
+			"<svg width=\"210mm\" height=\"297mm\" viewBox=\"0 0 210 297\" style=\"background-color:white\" xmlns=\"http://www.w3.org/2000/svg\" xmlns:inkscape=\"http://www.inkscape.org/namespaces/inkscape\" encoding=\"UTF-8\" >\n<g stroke=\"black\" stroke-width=\"0.0333\" stroke-linecap=\"round\" stroke-linejoin=\"round\" fill=\"none\" transform=\"translate(15.0000,88.5000) scale(30.0000)\">\n<defs><clipPath id=\"clip1\" ><rect id=\"cliprect\" width=\"5.9667\" height=\"3.9667\" x=\"0.0167\" y=\"0.0167\" /></clipPath></defs>\n<g inkscape:groupmode=\"layer\" inkscape:label=\"100 contour\" stroke=\"black\">\n<path id=\"0\" clip-path=\"url(#clip1)\"  d=\"M 1.11,0.50 L 1.50,-0.00 L 1.89,0.50 L 2.89,1.50 L 2.89,2.50 L 1.89,3.50 L 1.50,4.00 L 1.11,3.50 L 0.50,2.89 L -0.00,2.50 L -0.00,1.50 L 0.50,1.11 L 1.11,0.50 Z M 4.11,0.50 L 4.50,-0.00 L 5.50,-0.00 L 6.00,0.50 L 6.00,1.50 L 5.50,1.89 L 4.50,1.89 L 4.11,1.50 L 4.11,0.50 Z M 4.11,3.50 L 4.50,3.11 L 4.89,3.50 L 4.50,4.00 L 4.11,3.50 Z \" />\n</g>\n<g inkscape:groupmode=\"layer\" inkscape:label=\"200 contour\" stroke=\"black\">\n<path id=\"1\" clip-path=\"url(#clip1)\"  d=\"M 0.72,0.50 L 1.50,-0.00 L 2.28,0.50 L 3.28,1.50 L 3.28,2.50 L 2.28,3.50 L 1.50,4.00 L 0.72,3.50 L 0.50,3.28 L -0.00,2.50 L -0.00,1.50 L 0.50,0.72 L 0.72,0.50 Z M 3.72,0.50 L 4.50,-0.00 L 5.50,-0.00 L 6.00,0.50 L 6.00,1.50 L 5.50,2.28 L 4.50,2.28 L 3.72,1.50 L 3.72,0.50 Z M 3.72,3.50 L 4.50,2.72 L 5.28,3.50 L 4.50,4.00 L 3.72,3.50 Z \" />\n</g>\n</g>\n</svg>\n",
 		},
 	}
 	for _, td := range testdata {
 		fmt.Printf("\t%s\n", td.infile)
-		opts := OptsT{infile: td.infile, thresholds: td.thresholds, tcount: -1, margin: td.margin, frame: td.frame, framewidth: 2, paper: td.paper, clip: td.clip, linewidth: 1}
+		opts := OptsT{infile: td.infile, thresholds: td.thresholds, tcount: -1, margin: td.margin, framewidth: td.framewidth, paper: td.paper, clip: td.clip, linewidth: 1}
 		parsePaperSize(&opts)
 		svgFilename := createSVG(opts)
 		if svgFilename != td.outfile {

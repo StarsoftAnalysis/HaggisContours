@@ -16,7 +16,7 @@ import (
 	"github.com/spf13/pflag"
 )
 
-const version = "0.1.0"
+const version = "0.1.1"
 
 // Get the pixel value (0..255) at the given coordinates in the image
 // Grey: Y = 0.299 R + 0.587 G + 0.114 B
@@ -224,16 +224,15 @@ func parsePaperSize(opts *OptsT) bool {
 func parseArgs(args []string) (OptsT, bool) {
 	var opts OptsT
 	pf := pflag.NewFlagSet("contours", pflag.ExitOnError)
-	pf.Float64VarP(&opts.margin, "margin", "m", 15, "Minimum margin (in mm).")
-	pf.StringVarP(&opts.paper, "paper", "p", "A4L", "Paper size and orientation.  A4L | A4P | A3L | A3P.")
 	pf.IntSliceVarP(&opts.thresholds, "threshold", "t", []int{128}, "Threshold levels, each 0..255, separated by commas.")
 	pf.IntVarP(&opts.tcount, "tcount", "T", 1, "Number of evenly-spaced threshold levels (unless overridden by --threshold).")
-	pf.BoolVarP(&opts.frame, "frame", "f", false, "Draw a frame around the SVG image.")
+	pf.Float64VarP(&opts.margin, "margin", "m", 15, "Minimum margin (in mm).")
+	pf.StringVarP(&opts.paper, "paper", "p", "A4L", "Paper size and orientation.  A4L | A4P | A3L | A3P.")
+	pf.Float64VarP(&opts.linewidth, "linewidth", "l", 0.5, "Width of contour lines, in mm.")
+	pf.Float64VarP(&opts.framewidth, "framewidth", "f", 0.0, "Width of frame lines, if any, in mm.")
 	pf.BoolVarP(&opts.image, "image", "i", false, "Use the original image as a background in the SVG image.")
 	pf.BoolVarP(&opts.clip, "clip", "c", false, "Clip borders of image, rather than breaking contours.")
 	pf.BoolVarP(&opts.debug, "debug", "d", false, "Add extra bits to the SVG -- intended for developer use only.")
-	pf.Float64Var(&opts.linewidth, "linewidth", 0.5, "Width of contour lines, in mm.")
-	pf.Float64Var(&opts.framewidth, "framewidth", 1.0, "Width of frame lines, in mm.")
 	pf.SortFlags = false
 	if args == nil {
 		pf.Parse(os.Args[1:]) // don't pass program name
@@ -266,8 +265,8 @@ func parseArgs(args []string) (OptsT, bool) {
 
 func buildSVGfilename(opts OptsT) string {
 	frameString := ""
-	if opts.frame {
-		frameString = "F"
+	if opts.framewidth > 0.0 {
+		frameString = fmt.Sprintf("F%g", opts.framewidth)
 	}
 	imageString := ""
 	if opts.image {

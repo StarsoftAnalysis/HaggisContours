@@ -161,7 +161,6 @@ type OptsT struct {
 	margin     float64
 	paper      string
 	paperSize  RectangleT
-	frame      bool
 	image      bool
 	clip       bool
 	debug      bool

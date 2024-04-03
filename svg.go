@@ -252,7 +252,7 @@ func (svg *SVGfile) openStart(filename string, opts OptsT) {
 		svg.write(plotBox)
 	}
 
-	transform := fmt.Sprintf("transform=\"translate(%g,%g) scale(%.4f)\"", translate.width, translate.height, scale)
+	transform := fmt.Sprintf("transform=\"translate(%.4f,%.4f) scale(%.4f)\"", translate.width, translate.height, scale)
 
 	// stroke-width is 'descaled' to result in what the user asked for
 	g := fmt.Sprintf("<g stroke=\"black\" stroke-width=\"%.4f\" stroke-linecap=\"round\" stroke-linejoin=\"round\" fill=\"none\" %s>\n", opts.linewidth/scale, transform)
@@ -276,7 +276,7 @@ func (svg *SVGfile) openStart(filename string, opts OptsT) {
 	}
 
 	//fmt.Printf("lw=%v  scale=%v   clippage=%v\n", opts.linewidth, scale, clippage)
-	if opts.frame {
+	if opts.framewidth > 0.0 {
 		svg.layer(0, "frame")
 		// stroke-width is 'descaled' to result in what the user asked for:
 		fwdescaled := opts.framewidth / scale
@@ -293,17 +293,17 @@ func (svg *SVGfile) openStart(filename string, opts OptsT) {
 			y += clippage
 		}
 		//frame := fmt.Sprintf("<rect id=\"frame\" width=\"%d\" height=\"%d\" stroke-width=\"%.4f\" />\n", opts.width, opts.height, opts.framewidth/scale)
-		frame := fmt.Sprintf("<rect id=\"frame\" width=\"%.4f\" height=\"%.4f\" x=\"%.4f\" y=\"%.4f\" stroke-width=\"%.4f\" />\n", w, h, x, y, fwdescaled)
-		//fmt.Print(frame)
-		svg.write(frame)
+		frameString := fmt.Sprintf("<rect id=\"frame\" width=\"%.4f\" height=\"%.4f\" x=\"%.4f\" y=\"%.4f\" stroke-width=\"%.4f\" />\n", w, h, x, y, fwdescaled)
+		//fmt.Print(frameString)
+		svg.write(frameString)
 		// FIXME image is in frame layer -- OK?  if not, need to call endLayer, and have it set currentLayer to -1
 		//   and if no frame, the image is not in any layer -- what will axidraw do with it?  maybe
 	}
 	if opts.image {
 		// CHECK clip image same as plot?
-		image := fmt.Sprintf("<image id=\"background\" href=\"%s\" width=\"%d\" height=\"%d\" clip-path=\"url(#clip1)\" />\n", path.Base(opts.infile), opts.width, opts.height)
-		//fmt.Print(image)
-		svg.write(image)
+		imageString := fmt.Sprintf("<image id=\"background\" href=\"%s\" width=\"%d\" height=\"%d\" clip-path=\"url(#clip1)\" />\n", path.Base(opts.infile), opts.width, opts.height)
+		//fmt.Print(imageString)
+		svg.write(imageString)
 	}
 }
 

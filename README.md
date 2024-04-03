@@ -39,12 +39,9 @@ Contours at each level are grouped into Inkscape/Axidraw-style layers with the t
 Specify one or more threshold values, separated by commas, each in the range 0..255.  These are the pixel
 values that are used to find the contours.  If used, this option overrides --tcount.  Default `128`. Examples: `-t 99` `--threshold 32,64,96,128,160,192,224`
 
-* `--tcount | -T <1..254>`
+* `--tcount | -T <1..255>`
 Set the number of evenly-spaced threshold values.  For example, `-T 3` is equivalent to `-t 64,128,192`.  This option is ignored if `--threshold` is also specified.
-Valid range is 1 to 254.  Default `1`.  Examples: `--tcount 7` `-T8`
-
-* `--linewidth`
-The line width used for drawing contours, in millimetres.  Default `0.5`.  Examples: `--linewidth 1`, `--linewidth 2.54`
+Valid range is 1 to 255.  Default `1`.  Examples: `--tcount 7` `-T8`
 
 * `--margin | -m <width>`
 Define the minimum width of the margin around the created image.  
@@ -57,13 +54,13 @@ or a custom size in the format `<width>x<height>`.  Width and height are interpr
 if the value is greater than 30, otherwise as inches.  
 Default A4L. Examples: `-p A3L` `--paper 200x300` (mm) `-p 7x5` (inches)
 
-* `--frame | -f`
-Draw a simple frame around the SVG image.  Default false. Example `-f`
+* `--linewidth | -l <width>`
+The line width used for drawing contours, in millimetres.  Default `0.5`.  Examples: `--linewidth 1`, `-l 2.54`
+
+* `--framewidth | -f <width>`
+The line width used for drawing the frame, in millimetres.  Default `0.0`, i.e. no frame.  Examples: `--framewidth 3`, `-f 0.8`
 Note that the frame sits outside the SVG image: a wide frame will not obscure any of the image, but may mean that the image size is reduced so that frame and image 
 still fit within the paper size and margin.
-
-* `--framewidth`
-The line width used for drawing the frame, in millimetres.  Default `1.0`.  Examples: `--framewidth 3`, `--framewidth 0.8`
 The result will look a bit wrong if the --framewidth is less than the --linewidth.
 
 * `--image | -i`
