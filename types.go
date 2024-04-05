@@ -68,15 +68,16 @@ type Point64T struct {
 func (p Point64T) String() string {
 	return fmt.Sprintf("{%.3f, %.3f}", p.x, p.y)
 }
-
-// Points don't have to be precisely equal for our purposes
 func (p1 Point64T) Equal(p2 Point64T) bool {
+	// Points don't have to be precisely equal for our purposes
 	return math.Abs(p1.x-p2.x) < 0.001 && math.Abs(p1.y-p2.y) < 0.001
 }
-
-// Calculate the angle from p1 to p2, in radians widdershins.
 func (p1 Point64T) RelAngle(p2 Point64T) float64 {
+	// Calculate the angle from p1 to p2, in radians widdershins.
 	return math.Atan2(float64(p2.y-p1.y), float64(p2.x-p1.x))
+}
+func (p1 Point64T) Distance(p2 Point64T) float64 {
+	return float64(math.Hypot(float64(p1.x-p2.x), float64(p1.y-p2.y)))
 }
 
 type ContourT []Point64T

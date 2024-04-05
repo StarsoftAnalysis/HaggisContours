@@ -24,7 +24,7 @@ been found already -- comes straight from Foxall's code.
 
     $ hcontours thingy.png
 
-will create a file called thingy-hc-t128m15pA4L.svg.  The numbers in the output SVG file name indicate
+will create a file called thingy-hc-T1m15pA4L.svg.  The numbers in the output SVG file name indicate
 the values used for the threshold, margin, and paper options -- in this case, the default values.
 
 ## Details
@@ -81,6 +81,11 @@ Add extra bits to the SVG file and command line output -- intended for developer
 `hcontours examples/beach.png -t 32,64,96,128,160,192,224 --paper A4L --image --linewidth 0.3` produces this:
 
 <img alt="Photo of breakwaters on a beach" src="examples/beach.png" title="Input image" width=45%>&nbsp;&nbsp;&nbsp;&nbsp;<img alt="The same photo after processing, showing as the outlines of shapes" src="examples/beach-hc-t32,64,96,128,160,192,224m15pA4LI.png" title="Created SVG image (converted to PNG)" width=45%>
+
+## Requirements
+
+* Go 1.22
+* github.com/spf13/pflag -- pflag is a drop-in replacement for Go's flag package
 
 ## Licence 
 

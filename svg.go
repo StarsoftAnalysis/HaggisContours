@@ -35,8 +35,11 @@ type SVGfile struct {
 }
 
 func (svg *SVGfile) write(s string) {
-	//fmt.Printf("SVG.write: %s\n", s)
 	fmt.Fprint(svg.file, s)
+}
+
+func (svg *SVGfile) writeComment(s string) {
+	svg.write("<!-- " + s + " -->\n")
 }
 
 // Not used:
@@ -234,7 +237,7 @@ func calcSizes(image RectangleT, margin float64, paper RectangleT, framewidth fl
 	return translate, scale
 }
 
-func (svg *SVGfile) openStart(filename string, opts OptsT) {
+func (svg *SVGfile) openStart(filename string, opts OptsT) (scale float64) {
 	svg.filename = filename
 	svg.currentLayer = -1 // no layer open
 	fh, err := os.Create(svg.filename)
@@ -251,6 +254,8 @@ func (svg *SVGfile) openStart(filename string, opts OptsT) {
 	svgElement := fmt.Sprintf("<svg width=\"%gmm\" height=\"%gmm\" %s %s %s encoding=\"UTF-8\" >\n",
 		opts.paperSize.width, opts.paperSize.height, viewbox, bg, xmlns)
 	svg.write(svgElement)
+
+	svg.writeComment(fmt.Sprintf("%s, created by hcontours version %s", filename, hcVersion))
 
 	// Debug only: show paper limits
 	if opts.debug {
@@ -317,6 +322,8 @@ func (svg *SVGfile) openStart(filename string, opts OptsT) {
 		//fmt.Print(imageString)
 		svg.write(imageString)
 	}
+
+	return scale
 }
 
 func (svg *SVGfile) stopSave() {
@@ -334,6 +341,7 @@ func (svg *SVGfile) endLayer() {
 	if svg.currentLayer >= 0 {
 		svg.write("</g>\n") // end of stroke and layer group
 	}
+	svg.currentLayer = -1
 }
 func (svg *SVGfile) layer(l int, label string) {
 	if l == svg.currentLayer {

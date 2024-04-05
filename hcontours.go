@@ -32,7 +32,7 @@ import (
 	"github.com/spf13/pflag"
 )
 
-const version = "0.1.1"
+const hcVersion = "0.1.1"
 
 // Get the pixel value (0..255) at the given coordinates in the image
 // Grey: Y = 0.299 R + 0.587 G + 0.114 B
@@ -90,8 +90,9 @@ func pointWeightedAvg(out, in PointT, outPix, inPix, threshold int, width, heigh
 // - else turn right
 // (i.e. just a line-following thing)
 // * accumulate weighted mid-points of each in/out pair
-func traceContour(imageData *image.NRGBA, width, height int, threshold int, start PointT, svgF *SVGfile) (ContourT, []PointT) {
+func traceContour(imageData *image.NRGBA, width, height int, threshold int, start PointT, svgF *SVGfile) (ContourT, []PointT, float64) {
 	contour := make(ContourT, 0, 10)
+	contourLen := 0.0
 	seen := make([]PointT, 1, 10) // Annoyingly, we need to also return a list of in-shape pixels
 	seen[0] = start
 	direction := DirectionT(approachDir) // we bumped into start pixel moving in +v x direction
@@ -99,7 +100,8 @@ func traceContour(imageData *image.NRGBA, width, height int, threshold int, star
 	out := in.Backstep(direction)        // one step back -- gives pixel outside the shape
 	inPix := getPix(imageData, width, height, in)
 	outPix := getPix(imageData, width, height, out)
-	contour = append(contour, pointWeightedAvg(out, in, outPix, inPix, threshold, width, height))
+	prevPoint := pointWeightedAvg(out, in, outPix, inPix, threshold, width, height)
+	contour = append(contour, prevPoint)
 	direction.TurnLeft()
 	startDir := direction // The direction we'll be facing when the contour is complete
 	//fmt.Printf("\ntE: start=%v startDir=%v   in=%v inPix=%v  out=%v outPix=%v  contour=%v\n", start, startDir, in, inPix, out, outPix, contour)
@@ -139,7 +141,10 @@ func traceContour(imageData *image.NRGBA, width, height int, threshold int, star
 		}
 
 		// Add point to the contour (including the repeated point that closes the loop)
-		contour = append(contour, pointWeightedAvg(out, in, outPix, inPix, threshold, width, height))
+		nextPoint := pointWeightedAvg(out, in, outPix, inPix, threshold, width, height)
+		contour = append(contour, nextPoint)
+		contourLen += prevPoint.Distance(nextPoint)
+		prevPoint = nextPoint
 		// Break if back at beginning
 		//fmt.Printf("tE: break?  in=%v start=%v   dir=%v startDir=%v\n", in, start, direction, startDir)
 		if in.Equal(start) && direction == startDir {
@@ -147,7 +152,7 @@ func traceContour(imageData *image.NRGBA, width, height int, threshold int, star
 		}
 	}
 
-	return contour, seen
+	return contour, seen, contourLen
 }
 
 func b2c(b bool) string {
@@ -157,11 +162,12 @@ func b2c(b bool) string {
 	return "f"
 }
 
-func contourFinder(imageData *image.NRGBA, width, height int, threshold int, clip bool, svgF *SVGfile) ContourS {
+func contourFinder(imageData *image.NRGBA, width, height int, threshold int, clip bool, svgF *SVGfile) (ContourS, float64) {
 	seen := make([]bool, width*height)
 	skipping := false
 	contourCount := 0
 	contours := make(ContourS, 0, 3)
+	totalLen := 0.0
 	if clip {
 		// start the path -- single path for all contours.   TODO maybe like this for non-clipped paths
 		svgF.closedPathStart("")
@@ -171,9 +177,10 @@ func contourFinder(imageData *image.NRGBA, width, height int, threshold int, cli
 			p := PointT{x, y}
 			if getPix(imageData, width, height, p) < threshold {
 				if !seen[x+y*width] && !skipping {
-					contour, moreSeen := traceContour(imageData, width, height, threshold, p, svgF)
+					contour, moreSeen, contourLen := traceContour(imageData, width, height, threshold, p, svgF)
 					contourCount += 1
 					contours = append(contours, contour)
+					totalLen += contourLen
 					// this could be a _lot_ more efficient
 					for _, p := range moreSeen {
 						seen[p.x+p.y*width] = true
@@ -199,7 +206,7 @@ func contourFinder(imageData *image.NRGBA, width, height int, threshold int, cli
 	// contours are really only returned for test cases
 	// FIXME some contours may not have generated an SVG e.g. heightmap1
 	//  could return a value from plotContour
-	return contours
+	return contours, totalLen
 }
 
 func parsePaperSize(opts *OptsT) bool {
@@ -314,12 +321,23 @@ func createSVG(opts OptsT) string {
 	opts.width = width
 	opts.height = height
 	svgFilename := buildSVGfilename(opts)
-	svgF.openStart(svgFilename, opts)
-	for _, threshold := range opts.thresholds {
+	scale := svgF.openStart(svgFilename, opts)
+	contourText := make([]string, len(opts.thresholds))
+	totalLen := 0.0
+	for i, threshold := range opts.thresholds {
 		svgF.layer(threshold, "contour")
-		contours := contourFinder(img, opts.width, opts.height, threshold, opts.clip, svgF)
-		fmt.Printf("%d contours found at threshold %d\n", len(contours), threshold)
+		contours, thresholdLen := contourFinder(img, opts.width, opts.height, threshold, opts.clip, svgF)
+		contourText[i] = fmt.Sprintf("%d contours found at threshold %d, with length %.2fm", len(contours), threshold, thresholdLen*scale/1000)
+		totalLen += thresholdLen
 	}
+	svgF.endLayer()
+	for _, text := range contourText {
+		fmt.Println(text)
+		svgF.writeComment(text)
+	}
+	text := fmt.Sprintf("Total contour length: %.2fm", totalLen*scale/1000)
+	fmt.Println(text)
+	svgF.writeComment(text)
 	svgF.stopSave()
 	return svgFilename
 }

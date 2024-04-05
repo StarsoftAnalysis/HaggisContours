@@ -106,20 +106,21 @@ func TestTraceContour(t *testing.T) {
 		infile  string
 		contour ContourT
 		start   PointT
+		length  float64
 	}
 	testdata := []testdataT{ // Don't forget that no compression happens for these cases
 		{"tests/test0.png", ContourT{
 			{0.998, 1.500}, {1.500, 0.998}, {2.500, 0.998}, {3.002, 1.500}, {3.002, 2.500}, {2.500, 3.002}, {1.500, 3.002}, {0.998, 2.500},
 			{0.998, 1.500},
-		}, PointT{1, 1}},
+		}, PointT{1, 1}, 6.840},
 		{"tests/test1.png", ContourT{
 			{0.998, 1.500}, {1.500, 0.998}, {2.500, 0.998}, {3.500, 0.998}, {4.002, 1.500}, {3.500, 2.002}, {3.002, 2.500}, {2.500, 3.002},
 			{2.002, 3.500}, {1.500, 4.002}, {0.998, 3.500}, {0.998, 2.500}, {0.998, 1.500},
-		}, PointT{1, 1}},
+		}, PointT{1, 1}, 9.668},
 		{"tests/test4.png", ContourT{
 			{0.998, 0.500}, {1.500, -0.001}, {2.002, 0.500}, {2.500, 0.998}, {3.002, 1.500}, {3.002, 2.500}, {2.500, 3.002}, {2.002, 3.500},
 			{1.500, 4.001}, {0.998, 3.500}, {0.500, 3.002}, {-0.001, 2.500}, {-0.001, 1.500}, {0.500, 0.998}, {0.998, 0.500},
-		}, PointT{1, 0}},
+		}, PointT{1, 0}, 10.492},
 	}
 	for _, td := range testdata {
 		fmt.Printf("\t%s\n", td.infile)
@@ -127,7 +128,10 @@ func TestTraceContour(t *testing.T) {
 		if err != nil {
 			t.Errorf("Input file %s not found\n", td.infile)
 		}
-		got, _ := traceContour(img, width, height, 128, td.start, nil)
+		got, _, length := traceContour(img, width, height, 128, td.start, nil)
+		if !almostEqual(length, td.length, 0.001) {
+			t.Errorf("Wrong result for %s (wanted length %.3f  got %.3f)\n", td.infile, td.length, length)
+		}
 		if !got.Equal(td.contour) {
 			t.Errorf("Wrong result for %s start %v:\n\twanted=%v\n\t   got %v\n", td.infile, td.start, td.contour, got)
 		}
@@ -140,19 +144,20 @@ func TestContourFinder(t *testing.T) {
 		infile   string
 		contours ContourS
 		count    int
+		length   float64
 	}
 	testdata := []testdataT{ // Don't forget that no compression happens for these cases
 		{"tests/test0.png", ContourS{
 			{{0.998, 1.500}, {1.500, 0.998}, {2.500, 0.998}, {3.002, 1.500}, {3.002, 2.500}, {2.500, 3.002}, {1.500, 3.002}, {0.998, 2.500}, {0.998, 1.500}},
-		}, 1},
+		}, 1, 6.840},
 		{"tests/test1.png", ContourS{
 			{{0.998, 1.500}, {1.500, 0.998}, {2.500, 0.998}, {3.500, 0.998}, {4.002, 1.500}, {3.500, 2.002}, {3.002, 2.500}, {2.500, 3.002}, {2.002, 3.500},
 				{1.500, 4.002}, {0.998, 3.500}, {0.998, 2.500}, {0.998, 1.500}},
-		}, 1},
+		}, 1, 9.668},
 		{"tests/test2.png", ContourS{
 			{{-0.001, 0.500}, {0.500, -0.001}, {1.500, -0.001}, {2.002, 0.500}, {1.500, 1.002}, {1.002, 1.500}, {0.500, 2.002}, {-0.001, 1.500}, {-0.001, 0.500}},
 			{{2.998, 2.500}, {3.500, 1.998}, {4.001, 2.500}, {4.001, 3.500}, {3.500, 4.001}, {2.500, 4.001}, {1.998, 3.500}, {2.500, 2.998}, {2.998, 2.500}},
-		}, 2},
+		}, 2, 12.502},
 		{"tests/test3.png", ContourS{
 			{{0.998, 0.500}, {1.500, -0.001}, {2.500, -0.001}, {3.002, 0.500}, {3.002, 1.500}, {2.500, 2.002}, {2.002, 2.500}, {1.500, 3.002}, {0.500, 3.002},
 				{-0.001, 2.500}, {-0.001, 1.500}, {0.500, 0.998}, {0.998, 0.500}},
@@ -161,30 +166,30 @@ func TestContourFinder(t *testing.T) {
 				{2.500, 8.001}, {1.500, 8.001}, {0.500, 8.001}, {-0.001, 7.500}, {-0.001, 6.500}, {-0.001, 5.500}, {-0.001, 4.500}, {0.500, 3.998}, {1.500, 3.998},
 				{2.500, 3.998}, {2.998, 3.500}, {3.500, 2.998}, {3.998, 2.500}, {3.998, 1.500}, {3.998, 0.500}},
 			{{4.998, 4.500}, {5.500, 3.998}, {6.002, 4.500}, {6.002, 5.500}, {5.500, 6.002}, {4.500, 6.002}, {3.998, 5.500}, {4.500, 4.998}, {4.998, 4.500}},
-		}, 3},
+		}, 3, 45.581},
 		{"tests/test4.png", ContourS{
 			{{0.998, 0.500}, {1.500, -0.001}, {2.002, 0.500}, {2.500, 0.998}, {3.002, 1.500}, {3.002, 2.500}, {2.500, 3.002}, {2.002, 3.500}, {1.500, 4.001},
 				{0.998, 3.500}, {0.500, 3.002}, {-0.001, 2.500}, {-0.001, 1.500}, {0.500, 0.998}, {0.998, 0.500}},
 			{{3.998, 0.500}, {4.500, -0.001}, {5.500, -0.001}, {6.001, 0.500}, {6.001, 1.500}, {5.500, 2.002}, {4.500, 2.002}, {3.998, 1.500}, {3.998, 0.500}},
 			{{3.998, 3.500}, {4.500, 2.998}, {5.002, 3.500}, {4.500, 4.001}, {3.998, 3.500}},
-		}, 3},
+		}, 3, 20.167},
 		{"tests/test5.png", ContourS{
 			{{0.998, 1.500}, {1.500, 0.998}, {2.500, 0.998}, {3.500, 0.998}, {4.500, 0.998}, {5.500, 0.998}, {6.500, 0.998}, {7.002, 1.500}, {7.002, 2.500},
 				{7.002, 3.500}, {7.002, 4.500}, {7.002, 5.500}, {7.002, 6.500}, {6.500, 7.002}, {5.500, 7.002}, {4.500, 7.002}, {3.500, 7.002}, {2.500, 7.002},
 				{1.500, 7.002}, {0.998, 6.500}, {0.998, 5.500}, {0.998, 4.500}, {0.998, 3.500}, {0.998, 2.500}, {0.998, 1.500}},
 			{{4.998, 3.500}, {4.500, 3.002}, {3.500, 3.002}, {3.002, 3.500}, {3.002, 4.500}, {3.500, 4.998}, {4.500, 4.998}, {4.998, 4.500}, {4.998, 3.500}},
-		}, 2},
+		}, 2, 29.657},
 		{"tests/test6.png", ContourS{
 			{{0.998, 1.500}, {1.500, 0.998}, {2.500, 0.998}, {3.500, 0.998}, {4.500, 0.998}, {5.500, 0.998}, {6.500, 0.998}, {7.002, 1.500}, {7.002, 2.500},
 				{7.002, 3.500}, {7.002, 4.500}, {7.002, 5.500}, {7.002, 6.500}, {6.500, 7.002}, {5.500, 7.002}, {4.500, 7.002}, {3.500, 7.002}, {2.500, 7.002},
 				{1.500, 7.002}, {0.998, 6.500}, {0.998, 5.500}, {0.998, 4.500}, {0.998, 3.500}, {0.998, 2.500}, {0.998, 1.500}},
-		}, 1},
+		}, 1, 22.840},
 		// These two have non-closed thin lines -- the contour loops back to close itself:
 		{"tests/test7.png", ContourS{
 			{{0.998, 1.500}, {1.500, 0.998}, {2.500, 0.998}, {3.500, 0.998}, {4.002, 1.500}, {4.002, 2.500}, {4.002, 3.500}, {3.500, 4.002}, {2.500, 4.002},
 				{2.002, 4.500}, {2.500, 4.998}, {3.500, 4.998}, {4.002, 5.500}, {3.500, 6.002}, {2.500, 6.002}, {1.500, 6.002}, {0.998, 5.500}, {0.998, 4.500},
 				{0.998, 3.500}, {1.500, 2.998}, {2.500, 2.998}, {2.998, 2.500}, {2.500, 2.002}, {1.500, 2.002}, {0.998, 1.500}},
-		}, 1},
+		}, 1, 20.496},
 		{"tests/test8.png", ContourS{
 			{{0.998, 1.500}, {1.500, 0.998}, {2.500, 0.998}, {3.500, 0.998}, {4.500, 0.998}, {5.500, 0.998}, {6.500, 0.998}, {7.500, 0.998}, {8.002, 1.500},
 				{7.500, 2.002}, {6.500, 2.002}, {5.500, 2.002}, {4.500, 2.002}, {3.500, 2.002}, {2.500, 2.002}, {1.500, 2.002}, {0.998, 1.500}},
@@ -193,9 +198,9 @@ func TestContourFinder(t *testing.T) {
 			{{2.998, 3.500}, {3.500, 2.998}, {4.002, 3.500}, {4.500, 3.998}, {5.002, 4.500}, {5.500, 4.998}, {6.002, 5.500}, {6.500, 5.998}, {7.002, 6.500},
 				{7.500, 6.998}, {8.002, 7.500}, {7.500, 8.002}, {6.998, 7.500}, {6.500, 7.002}, {5.998, 6.500}, {5.500, 6.002}, {4.998, 5.500}, {4.500, 5.002},
 				{3.998, 4.500}, {3.500, 4.002}, {2.998, 3.500}},
-		}, 3},
-		{"tests/example.png", nil, 10},
-		{"tests/bottom.png", nil, 155},
+		}, 3, 39.832},
+		{"tests/example.png", nil, 10, 3663.063},
+		{"tests/bottom.png", nil, 155, 6699.664},
 	}
 	for _, td := range testdata {
 		fmt.Printf("\t%s\n", td.infile)
@@ -203,19 +208,22 @@ func TestContourFinder(t *testing.T) {
 		if err != nil {
 			t.Errorf("Input file %s not found\n", td.infile)
 		}
-		got := contourFinder(img, width, height, 128, false, nil)
-		if len(got) != td.count {
-			t.Errorf("Wrong result for %s (wanted length %v  got %v)\n", td.infile, td.count, len(got))
+		contours, length := contourFinder(img, width, height, 128, false, nil)
+		if len(contours) != td.count {
+			t.Errorf("Wrong result for %s (wanted count %v  got %v)\n", td.infile, td.count, len(contours))
+		}
+		if !almostEqual(length, td.length, 0.001) {
+			t.Errorf("Wrong result for %s (wanted length %.3f  got %.3f)\n", td.infile, td.length, length)
 		}
 		if td.contours != nil {
 			equal := true
-			for i := 0; equal && i < len(got); i++ {
-				if !got[i].Equal(td.contours[i]) {
+			for i := 0; equal && i < len(contours); i++ {
+				if !contours[i].Equal(td.contours[i]) {
 					equal = false
 				}
 			}
 			if !equal {
-				t.Errorf("Wrong result for %s\n\twanted %v\n\t   got %v\n", td.infile, td.contours, got)
+				t.Errorf("Wrong result for %s\n\twanted %v\n\t   got %v\n", td.infile, td.contours, contours)
 			}
 		}
 	}
@@ -261,10 +269,10 @@ func TestCreateSVG(t *testing.T) {
 	}
 	testdata := []testdataT{ // Compression is done for SVG contours
 		{"tests/test3.png", "tests/test3-hc-t128m15pA4LF2.svg", []int{128}, 15, 2.0, "A4L", false,
-			"<svg width=\"297mm\" height=\"210mm\" viewBox=\"0 0 297 210\" style=\"background-color:white\" xmlns=\"http://www.w3.org/2000/svg\" xmlns:inkscape=\"http://www.inkscape.org/namespaces/inkscape\" encoding=\"UTF-8\" >\n<g stroke=\"black\" stroke-width=\"0.0455\" stroke-linecap=\"round\" stroke-linejoin=\"round\" fill=\"none\" transform=\"translate(60.5000,17.0000) scale(22.0000)\">\n<g inkscape:groupmode=\"layer\" inkscape:label=\"0 frame/background\" stroke=\"black\">\n<rect id=\"frame\" width=\"8.0909\" height=\"8.0909\" x=\"-0.0455\" y=\"-0.0455\" stroke-width=\"0.0909\" />\n</g>\n<g inkscape:groupmode=\"layer\" inkscape:label=\"128 contour\" stroke=\"black\">\n<polyline id=\"0\" points=\"1.00,0.50 1.50,0.00 \" />\n<polyline id=\"1\" points=\"2.50,0.00 3.00,0.50 3.00,1.50 1.50,3.00 0.50,3.00 0.00,2.50 \" />\n<polyline id=\"2\" points=\"0.00,1.50 1.00,0.50 \" />\n<polyline id=\"3\" points=\"4.00,0.50 4.50,0.00 \" />\n<polyline id=\"4\" points=\"0.00,4.50 0.50,4.00 2.50,4.00 4.00,2.50 4.00,0.50 \" />\n<polygon id=\"0\"  points=\"5.00,4.50 5.50,4.00 6.00,4.50 6.00,5.50 5.50,6.00 4.50,6.00 4.00,5.50 5.00,4.50 \" />\n</g>\n</g>\n</svg>\n",
+			"<svg width=\"297mm\" height=\"210mm\" viewBox=\"0 0 297 210\" style=\"background-color:white\" xmlns=\"http://www.w3.org/2000/svg\" xmlns:inkscape=\"http://www.inkscape.org/namespaces/inkscape\" encoding=\"UTF-8\" >\n<!-- tests/test3-hc-t128m15pA4LF2.svg, created by hcontours version 0.1.1 -->\n<g stroke=\"black\" stroke-width=\"0.0455\" stroke-linecap=\"round\" stroke-linejoin=\"round\" fill=\"none\" transform=\"translate(60.5000,17.0000) scale(22.0000)\">\n<g inkscape:groupmode=\"layer\" inkscape:label=\"0 frame/background\" stroke=\"black\">\n<rect id=\"frame\" width=\"8.0909\" height=\"8.0909\" x=\"-0.0455\" y=\"-0.0455\" stroke-width=\"0.0909\" />\n</g>\n<g inkscape:groupmode=\"layer\" inkscape:label=\"128 contour\" stroke=\"black\">\n<polyline id=\"0\" points=\"1.00,0.50 1.50,0.00 \" />\n<polyline id=\"1\" points=\"2.50,0.00 3.00,0.50 3.00,1.50 1.50,3.00 0.50,3.00 0.00,2.50 \" />\n<polyline id=\"2\" points=\"0.00,1.50 1.00,0.50 \" />\n<polyline id=\"3\" points=\"4.00,0.50 4.50,0.00 \" />\n<polyline id=\"4\" points=\"0.00,4.50 0.50,4.00 2.50,4.00 4.00,2.50 4.00,0.50 \" />\n<polygon id=\"0\"  points=\"5.00,4.50 5.50,4.00 6.00,4.50 6.00,5.50 5.50,6.00 4.50,6.00 4.00,5.50 5.00,4.50 \" />\n</g>\n<!-- 3 contours found at threshold 128, with length 1.00m -->\n<!-- Total contour length: 1.00m -->\n</g>\n</svg>\n",
 		},
 		{"tests/test4.png", "tests/test4-hc-t100,200m15pA4PC.svg", []int{100, 200}, 15, 0.0, "A4P", true,
-			"<svg width=\"210mm\" height=\"297mm\" viewBox=\"0 0 210 297\" style=\"background-color:white\" xmlns=\"http://www.w3.org/2000/svg\" xmlns:inkscape=\"http://www.inkscape.org/namespaces/inkscape\" encoding=\"UTF-8\" >\n<g stroke=\"black\" stroke-width=\"0.0333\" stroke-linecap=\"round\" stroke-linejoin=\"round\" fill=\"none\" transform=\"translate(15.0000,88.5000) scale(30.0000)\">\n<defs><clipPath id=\"clip1\" ><rect id=\"cliprect\" width=\"5.9667\" height=\"3.9667\" x=\"0.0167\" y=\"0.0167\" /></clipPath></defs>\n<g inkscape:groupmode=\"layer\" inkscape:label=\"100 contour\" stroke=\"black\">\n<path id=\"0\" clip-path=\"url(#clip1)\"  d=\"M 1.11,0.50 L 1.50,-0.00 L 1.89,0.50 L 2.89,1.50 L 2.89,2.50 L 1.89,3.50 L 1.50,4.00 L 1.11,3.50 L 0.50,2.89 L -0.00,2.50 L -0.00,1.50 L 0.50,1.11 L 1.11,0.50 Z M 4.11,0.50 L 4.50,-0.00 L 5.50,-0.00 L 6.00,0.50 L 6.00,1.50 L 5.50,1.89 L 4.50,1.89 L 4.11,1.50 L 4.11,0.50 Z M 4.11,3.50 L 4.50,3.11 L 4.89,3.50 L 4.50,4.00 L 4.11,3.50 Z \" />\n</g>\n<g inkscape:groupmode=\"layer\" inkscape:label=\"200 contour\" stroke=\"black\">\n<path id=\"1\" clip-path=\"url(#clip1)\"  d=\"M 0.72,0.50 L 1.50,-0.00 L 2.28,0.50 L 3.28,1.50 L 3.28,2.50 L 2.28,3.50 L 1.50,4.00 L 0.72,3.50 L 0.50,3.28 L -0.00,2.50 L -0.00,1.50 L 0.50,0.72 L 0.72,0.50 Z M 3.72,0.50 L 4.50,-0.00 L 5.50,-0.00 L 6.00,0.50 L 6.00,1.50 L 5.50,2.28 L 4.50,2.28 L 3.72,1.50 L 3.72,0.50 Z M 3.72,3.50 L 4.50,2.72 L 5.28,3.50 L 4.50,4.00 L 3.72,3.50 Z \" />\n</g>\n</g>\n</svg>\n",
+			"<svg width=\"210mm\" height=\"297mm\" viewBox=\"0 0 210 297\" style=\"background-color:white\" xmlns=\"http://www.w3.org/2000/svg\" xmlns:inkscape=\"http://www.inkscape.org/namespaces/inkscape\" encoding=\"UTF-8\" >\n<!-- tests/test4-hc-t100,200m15pA4PC.svg, created by hcontours version 0.1.1 -->\n<g stroke=\"black\" stroke-width=\"0.0333\" stroke-linecap=\"round\" stroke-linejoin=\"round\" fill=\"none\" transform=\"translate(15.0000,88.5000) scale(30.0000)\">\n<defs><clipPath id=\"clip1\" ><rect id=\"cliprect\" width=\"5.9667\" height=\"3.9667\" x=\"0.0167\" y=\"0.0167\" /></clipPath></defs>\n<g inkscape:groupmode=\"layer\" inkscape:label=\"100 contour\" stroke=\"black\">\n<path id=\"0\" clip-path=\"url(#clip1)\"  d=\"M 1.11,0.50 L 1.50,-0.00 L 1.89,0.50 L 2.89,1.50 L 2.89,2.50 L 1.89,3.50 L 1.50,4.00 L 1.11,3.50 L 0.50,2.89 L -0.00,2.50 L -0.00,1.50 L 0.50,1.11 L 1.11,0.50 Z M 4.11,0.50 L 4.50,-0.00 L 5.50,-0.00 L 6.00,0.50 L 6.00,1.50 L 5.50,1.89 L 4.50,1.89 L 4.11,1.50 L 4.11,0.50 Z M 4.11,3.50 L 4.50,3.11 L 4.89,3.50 L 4.50,4.00 L 4.11,3.50 Z \" />\n</g>\n<g inkscape:groupmode=\"layer\" inkscape:label=\"200 contour\" stroke=\"black\">\n<path id=\"1\" clip-path=\"url(#clip1)\"  d=\"M 0.72,0.50 L 1.50,-0.00 L 2.28,0.50 L 3.28,1.50 L 3.28,2.50 L 2.28,3.50 L 1.50,4.00 L 0.72,3.50 L 0.50,3.28 L -0.00,2.50 L -0.00,1.50 L 0.50,0.72 L 0.72,0.50 Z M 3.72,0.50 L 4.50,-0.00 L 5.50,-0.00 L 6.00,0.50 L 6.00,1.50 L 5.50,2.28 L 4.50,2.28 L 3.72,1.50 L 3.72,0.50 Z M 3.72,3.50 L 4.50,2.72 L 5.28,3.50 L 4.50,4.00 L 3.72,3.50 Z \" />\n</g>\n<!-- 3 contours found at threshold 100, with length 0.58m -->\n<!-- 3 contours found at threshold 200, with length 0.68m -->\n<!-- Total contour length: 1.26m -->\n</g>\n</svg>\n",
 		},
 	}
 	for _, td := range testdata {
