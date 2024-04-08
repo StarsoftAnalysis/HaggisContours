@@ -64,10 +64,17 @@ still fit within the paper size and margin.
 The result may look a bit tatty at the edges if the --framewidth is less than the --linewidth and --clip is not used.
 
 * `--image | -i`
-Use the original image as a background in the SVG image.  Default false. Example: `--image`
+Use the original image as a background in the SVG image.  Default `false`. Example: `--image`
 
 * `--clip | -c`
-Clip borders of image, rather than breaking contours.  This will hopefully allow filling contours, but won't work with AxiDraw. Default false.
+Clip borders of image, rather than breaking contours.  This will hopefully allow filling contours, but won't work with AxiDraw. Default `false`.
+
+* `--colours | -C <hexcolour[,hexcolour]> | <hexcolour-hexcolour> `
+Colours to use for filling, given as one or [six-digit hexadecimal RGB colour strings](https://developer.mozilla.org/en-US/docs/Web/CSS/hex-color) separated by commas.  
+Alternatively, two colours separated by a dash ('-') will be used as a range, and intermediate colours will be interpolated.  
+Implies `--clip`, because otherwise filling won't work.
+The colours will cover a background image if `--image` is used as well.
+Default: none -- no fill.  Examples: `--colours ff0000` `--colours ff4444,44ff44,4444ff` `--colours 000000-ffffff`
 
 * `--debug | -d`
 Add extra bits to the SVG file and command line output -- intended for developer use only.  Default false.
@@ -81,6 +88,12 @@ Add extra bits to the SVG file and command line output -- intended for developer
 `hcontours examples/beach.png -t 32,64,96,128,160,192,224 --paper A4L --image --linewidth 0.3` produces this:
 
 <img alt="Photo of breakwaters on a beach" src="examples/beach.png" title="Input image" width=45%>&nbsp;&nbsp;&nbsp;&nbsp;<img alt="The same photo after processing, showing as the outlines of shapes" src="examples/beach-hc-t32,64,96,128,160,192,224m15pA4LI.png" title="Created SVG image (converted to PNG)" width=45%>
+
+`./hcontours examples/beach.png --colours ff0000,777700,00ff00,00ffff,0000ff,770077 -T5` produces this:
+
+<img alt="Photo of breakwaters on a beach" src="examples/beach.png" title="Input image" width=45%>&nbsp;&nbsp;&nbsp;&nbsp;<img alt="The same photo after processing, showing as the outlines of shapes filled in with lurid colours" src="examples/beach-hc-T5m15pA4LCff0000,777700,00ff00,00ffff,0000ff,770077.svg" title="Created SVG image (converted to PNG)" width=45%>
+
+
 
 ## Requirements
 

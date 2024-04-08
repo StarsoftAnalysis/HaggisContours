@@ -166,3 +166,15 @@ func evenThresholds(n int) []int {
 func almostEqual(a, b float64, epsilon float64) bool {
 	return math.Abs(a-b) <= epsilon
 }
+
+func equalStringSlice(a, b []string) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i := range a {
+		if a[i] != b[i] {
+			return false
+		}
+	}
+	return true
+}

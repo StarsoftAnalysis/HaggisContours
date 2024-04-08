@@ -21,8 +21,11 @@ package main
 import (
 	"fmt"
 	"log"
+	"math"
 	"os"
 	"path"
+	"strconv"
+	"strings"
 )
 
 type SVGfile struct {
@@ -32,6 +35,8 @@ type SVGfile struct {
 	pathCounter     int
 	polygonCounter  int
 	polylineCounter int
+	thresholds      []int    // [0] is the background, so other indexes are bumped up by 1
+	colours         []string //			SVGColourM // indexed by threshold
 }
 
 func (svg *SVGfile) write(s string) {
@@ -237,9 +242,66 @@ func calcSizes(image RectangleT, margin float64, paper RectangleT, framewidth fl
 	return translate, scale
 }
 
+// Parse the colour string, e.g. "00ff00" or "123456,abcdef,ff7700" or "222222-eeeeee"
+// into a slice of such values.
+// The input has already been validated by regexp, so no error checking done here.
+// Assumes svg.thresholds has already be set up.
+func (svg *SVGfile) setColours(colourString string) {
+	if colourString == "" {
+		return
+	}
+
+	colourString = strings.ToLower(colourString)
+	if len(colourString) == 6 {
+		// Single colour -- treat as two (one for contour, one for background)
+		svg.colours = []string{colourString, colourString}
+		return
+	}
+
+	if colourString[6:7] == "," {
+		// List of colours
+		svg.colours = strings.Split(colourString, ",")
+		return
+	}
+
+	// Range of colours  123456-abcdef
+	svg.colours = make([]string, len(svg.thresholds))
+	hex0 := colourString[:6]
+	hex1 := colourString[7:]
+
+	// first contour gets first colour
+	svg.colours[0] = hex0
+
+	tcount := len(svg.thresholds) // including 1 for the background
+	if tcount > 2 {
+		r0, _ := strconv.ParseInt(colourString[0:2], 16, 0)
+		g0, _ := strconv.ParseInt(colourString[2:4], 16, 0)
+		b0, _ := strconv.ParseInt(colourString[4:6], 16, 0)
+		r1, _ := strconv.ParseInt(colourString[7:9], 16, 0)
+		g1, _ := strconv.ParseInt(colourString[9:11], 16, 0)
+		b1, _ := strconv.ParseInt(colourString[11:13], 16, 0)
+		rStep := float64(r1-r0) / float64(tcount-1)
+		gStep := float64(g1-g0) / float64(tcount-1)
+		bStep := float64(b1-b0) / float64(tcount-1)
+		//fmt.Printf("input=%s  t's=%v  %02x %02x %02x   %02x %02x %02x   step: %v %v %v\n", colourString, svg.thresholds, r0, g0, b0, r1, g1, b1, rStep, gStep, bStep)
+		for i := 1; i < tcount; i++ {
+			r := r0 + int64(math.Round(float64(i)*rStep))
+			g := g0 + int64(math.Round(float64(i)*gStep))
+			b := b0 + int64(math.Round(float64(i)*bStep))
+			svg.colours[i] = fmt.Sprintf("%02x%02x%02x", r, g, b)
+		}
+	}
+
+	// background counts as last threshold
+	svg.colours[len(svg.colours)-1] = hex1
+	//fmt.Printf("setColours: %#v\n", svg.colours)
+}
+
 func (svg *SVGfile) openStart(filename string, opts OptsT) (scale float64) {
 	svg.filename = filename
-	svg.currentLayer = -1 // no layer open
+	svg.currentLayer = -1                                 // no layer open
+	svg.thresholds = append([]int{0}, opts.thresholds...) // the background counts as threshold 0
+	svg.setColours(opts.colours)
 	fh, err := os.Create(svg.filename)
 	if err != nil {
 		log.Fatalf("Unable to open SVG file %q - %s", svg.filename, err)
@@ -255,7 +317,7 @@ func (svg *SVGfile) openStart(filename string, opts OptsT) (scale float64) {
 		opts.paperSize.width, opts.paperSize.height, viewbox, bg, xmlns)
 	svg.write(svgElement)
 
-	svg.writeComment(fmt.Sprintf("%s, created by hcontours version %s", filename, hcVersion))
+	svg.writeComment(fmt.Sprintf("%s, created by %s version %s", filename, hcName, hcVersion))
 
 	// Debug only: show paper limits
 	if opts.debug {
@@ -274,6 +336,7 @@ func (svg *SVGfile) openStart(filename string, opts OptsT) (scale float64) {
 
 	transform := fmt.Sprintf("transform=\"translate(%.4f,%.4f) scale(%.4f)\"", translate.width, translate.height, scale)
 
+	// Main group -- scaled to fit paper
 	// stroke-width is 'descaled' to result in what the user asked for
 	g := fmt.Sprintf("<g stroke=\"black\" stroke-width=\"%.4f\" stroke-linecap=\"round\" stroke-linejoin=\"round\" fill=\"none\" %s>\n", opts.linewidth/scale, transform)
 	svg.write(g)
@@ -292,9 +355,23 @@ func (svg *SVGfile) openStart(filename string, opts OptsT) (scale float64) {
 		svg.write(clipString)
 	}
 
-	if opts.framewidth > 0.0 || opts.image {
-		svg.layer(0, "frame/background")
+	// Background layer for various reasons -- for clip because might have fill colours
+	svg.layer(0, "background", len(svg.thresholds)-1)
+
+	if opts.image {
+		// CHECK clip image same as plot?
+		imageString := fmt.Sprintf("<image id=\"background\" href=\"%s\" width=\"%d\" height=\"%d\" clip-path=\"url(#clip1)\" />\n", path.Base(opts.infile), opts.width, opts.height)
+		//fmt.Print(imageString)
+		svg.write(imageString)
 	}
+
+	// If colouring, need a background rect to be filled by the first colour
+	if len(svg.colours) > 0 {
+		rect := fmt.Sprintf("<rect id=\"plotsize\" width=\"%g\" height=\"%g\" stroke=\"none\" />\n",
+			float64(opts.width), float64(opts.height))
+		svg.write(rect)
+	}
+
 	//fmt.Printf("lw=%v  scale=%v   clippage=%v\n", opts.linewidth, scale, clippage)
 	if opts.framewidth > 0.0 {
 		// stroke-width is 'descaled' to result in what the user asked for:
@@ -316,12 +393,6 @@ func (svg *SVGfile) openStart(filename string, opts OptsT) (scale float64) {
 		//fmt.Print(frameString)
 		svg.write(frameString)
 	}
-	if opts.image {
-		// CHECK clip image same as plot?
-		imageString := fmt.Sprintf("<image id=\"background\" href=\"%s\" width=\"%d\" height=\"%d\" clip-path=\"url(#clip1)\" />\n", path.Base(opts.infile), opts.width, opts.height)
-		//fmt.Print(imageString)
-		svg.write(imageString)
-	}
 
 	return scale
 }
@@ -333,8 +404,13 @@ func (svg *SVGfile) stopSave() {
 	fmt.Printf("Created SVG file %q\n", svg.filename)
 }
 
-func (svg *SVGfile) startLayer(l int, label string) {
-	svg.write(fmt.Sprintf("<g inkscape:groupmode=\"layer\" inkscape:label=\"%d %s\" stroke=\"black\">\n", l, label))
+func (svg *SVGfile) startLayer(l int, label string, colourIdx int) {
+	fill := ""
+	if len(svg.colours) > 0 {
+		//fmt.Printf("svg.sL: contour fill: l=%d  svg.colours[%d]=%v\n", l, colourIdx, svg.colours[colourIdx%len(svg.colours)])
+		fill = fmt.Sprintf("fill=\"#%s\"", svg.colours[colourIdx%len(svg.colours)])
+	}
+	svg.write(fmt.Sprintf("<g inkscape:groupmode=\"layer\" inkscape:label=\"%d %s\" stroke=\"black\" %s >\n", svg.thresholds[l], label, fill))
 	svg.currentLayer = l
 }
 func (svg *SVGfile) endLayer() {
@@ -343,11 +419,12 @@ func (svg *SVGfile) endLayer() {
 	}
 	svg.currentLayer = -1
 }
-func (svg *SVGfile) layer(l int, label string) {
+func (svg *SVGfile) layer(l int, label string, colourIdx int) {
+	//fmt.Printf("svg.l: cL=%d l=%d label=%s\n", svg.currentLayer, l, label)
 	if l == svg.currentLayer {
 		// nothing to do
 	} else {
 		svg.endLayer()
-		svg.startLayer(l, label)
+		svg.startLayer(l, label, colourIdx)
 	}
 }

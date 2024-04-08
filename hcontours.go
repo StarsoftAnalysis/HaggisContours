@@ -25,14 +25,18 @@ import (
 	_ "image/png"
 	"math"
 	"os"
+	"path"
 	"path/filepath"
+	"regexp"
 	"strconv"
 	"strings"
 
 	"github.com/spf13/pflag"
 )
 
-const hcVersion = "0.1.1"
+var hcName = path.Base(os.Args[0])
+
+const hcVersion = "0.1.2"
 
 // Get the pixel value (0..255) at the given coordinates in the image
 // Grey: Y = 0.299 R + 0.587 G + 0.114 B
@@ -226,7 +230,7 @@ func parsePaperSize(opts *OptsT) bool {
 		// something like 123x45
 		paperWidth, err := strconv.ParseFloat(dims[0], 64)
 		paperHeight, err := strconv.ParseFloat(dims[1], 64)
-		fmt.Printf("pps: pW=%v pH=%v err=%v\n", paperWidth, paperHeight, err)
+		//fmt.Printf("pps: pW=%v pH=%v err=%v\n", paperWidth, paperHeight, err)
 		if err != nil {
 			valid = false
 		} else {
@@ -253,6 +257,7 @@ func parseArgs(args []string) (OptsT, bool) {
 	pf.StringVarP(&opts.paper, "paper", "p", "A4L", "Paper size and orientation.  A4L | A4P | A3L | A3P.")
 	pf.Float64VarP(&opts.linewidth, "linewidth", "l", 0.5, "Width of contour lines, in mm.")
 	pf.Float64VarP(&opts.framewidth, "framewidth", "f", 0.0, "Width of frame lines, if any, in mm.")
+	pf.StringVarP(&opts.colours, "colours", "C", "", "Colours used to fill the contour levels, e.g. 'ffff00,ff0000'. Implies --clip.")
 	pf.BoolVarP(&opts.image, "image", "i", false, "Use the original image as a background in the SVG image.")
 	pf.BoolVarP(&opts.clip, "clip", "c", false, "Clip borders of image, rather than breaking contours.")
 	pf.BoolVarP(&opts.debug, "debug", "d", false, "Add extra bits to the SVG -- intended for developer use only.")
@@ -273,6 +278,17 @@ func parseArgs(args []string) (OptsT, bool) {
 	} else {
 		opts.tcount = limitInt(opts.tcount, 1, 255)
 		opts.thresholds = evenThresholds(opts.tcount)
+	}
+	if pf.Changed("colours") {
+		// Case-insensitive, 6 hex-chars, comma, 6 hex-chars
+		validColourList := regexp.MustCompile(`(?i:^[0-9a-f]{6}(,[0-9a-f]{6})*$)`)
+		validColourRange := regexp.MustCompile(`(?i:^[0-9a-f]{6}-[0-9a-f]{6}$)`)
+		if !validColourList.MatchString(opts.colours) && !validColourRange.MatchString(opts.colours) {
+			fmt.Printf("Invalid colours '%s'\n", opts.colours)
+			ok = false
+		}
+		// implies --clip
+		opts.clip = true
 	}
 	opts.infile = pf.Arg(0)
 	ok = ok && parsePaperSize(&opts)
@@ -305,7 +321,12 @@ func buildSVGfilename(opts OptsT) string {
 	} else {
 		tString = fmt.Sprintf("T%d", opts.tcount)
 	}
-	optString := fmt.Sprintf("-hc-%sm%gp%s%s%s%s", tString, opts.margin, opts.paper, frameString, imageString, clipString)
+	colourString := ""
+	if opts.colours != "" {
+		colourString = "C" + opts.colours
+		clipString = "" // don't need that as well
+	}
+	optString := fmt.Sprintf("-hc-%sm%gp%s%s%s%s%s", tString, opts.margin, opts.paper, frameString, imageString, clipString, colourString)
 	ext := filepath.Ext(opts.infile)
 	filename := strings.TrimSuffix(opts.infile, ext) + optString + ".svg"
 	return filename
@@ -324,8 +345,10 @@ func createSVG(opts OptsT) string {
 	scale := svgF.openStart(svgFilename, opts)
 	contourText := make([]string, len(opts.thresholds))
 	totalLen := 0.0
-	for i, threshold := range opts.thresholds {
-		svgF.layer(threshold, "contour")
+	for i := len(opts.thresholds) - 1; i >= 0; i-- {
+		threshold := opts.thresholds[i]
+		//fmt.Printf("cSVG: i=%d threshold=%d starting layer %d\n", i, threshold, i+1)
+		svgF.layer(i+1 /* threshold */, "contour", i)
 		contours, thresholdLen := contourFinder(img, opts.width, opts.height, threshold, opts.clip, svgF)
 		contourText[i] = fmt.Sprintf("%d contours found at threshold %d, with length %.2fm", len(contours), threshold, thresholdLen*scale/1000)
 		totalLen += thresholdLen
@@ -347,7 +370,7 @@ func main() {
 	if !ok {
 		os.Exit(1)
 	}
-	fmt.Printf("hcontours: processing '%s'\n", opts.infile)
+	fmt.Printf("%s: processing '%s'\n", hcName, opts.infile)
 	//fmt.Printf("\t%+v\n", opts)
 	//fmt.Printf("options: %#v\n", opts)
 	_ = createSVG(opts)

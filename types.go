@@ -183,6 +183,7 @@ type OptsT struct {
 	debug      bool
 	linewidth  float64
 	framewidth float64
+	colours    string // two hex colours, e.g. "0033ff,0c4088"
 }
 
 const white = 0xff
