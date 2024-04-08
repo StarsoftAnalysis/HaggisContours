@@ -91,7 +91,7 @@ Add extra bits to the SVG file and command line output -- intended for developer
 
 `./hcontours examples/beach.png --colours ff0000,777700,00ff00,00ffff,0000ff,770077 -T5` produces this:
 
-<img alt="Photo of breakwaters on a beach" src="examples/beach.png" title="Input image" width=45%>&nbsp;&nbsp;&nbsp;&nbsp;<img alt="The same photo after processing, showing as the outlines of shapes filled in with lurid colours" src="examples/beach-hc-T5m15pA4LCff0000,777700,00ff00,00ffff,0000ff,770077.svg" title="Created SVG image (converted to PNG)" width=45%>
+<img alt="Photo of breakwaters on a beach" src="examples/beach.png" title="Input image" width=45%>&nbsp;&nbsp;&nbsp;&nbsp;<img alt="The same photo after processing, showing as the outlines of shapes filled in with lurid colours" src="examples/beach-hc-T5m15pA4LCff0000,777700,00ff00,00ffff,0000ff,770077.png" title="Created SVG image (converted to PNG)" width=45%>
 
 
 
