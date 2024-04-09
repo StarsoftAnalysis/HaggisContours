@@ -208,8 +208,6 @@ func contourFinder(imageData *image.NRGBA, width, height int, threshold int, cli
 		svgF.closedPathStop()
 	}
 	// contours are really only returned for test cases
-	// FIXME some contours may not have generated an SVG e.g. heightmap1
-	//  could return a value from plotContour
 	return contours, totalLen
 }
 
@@ -342,7 +340,13 @@ func createSVG(opts OptsT) string {
 	opts.width = width
 	opts.height = height
 	svgFilename := buildSVGfilename(opts)
-	scale := svgF.openStart(svgFilename, opts)
+	svgF.open(svgFilename)
+	svgF.writeComment(fmt.Sprintf("%s, created by %s version %s", svgFilename, hcName, hcVersion))
+	// This doesn't work, because "--" in option prefixes messes with XML comments:
+	//svgF.writeComment(fmt.Sprintf("Command line: %s %s", path.Base(os.Args[0]), strings.Join(os.Args[1:], " ")))
+	// - could do something clever by extracing the command line information from spflag with short -x flags.
+	svgF.writeComment(fmt.Sprintf("Options used: %v", opts))
+	scale := svgF.start(opts)
 	contourText := make([]string, len(opts.thresholds))
 	totalLen := 0.0
 	for i := len(opts.thresholds) - 1; i >= 0; i-- {

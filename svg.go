@@ -297,16 +297,20 @@ func (svg *SVGfile) setColours(colourString string) {
 	//fmt.Printf("setColours: %#v\n", svg.colours)
 }
 
-func (svg *SVGfile) openStart(filename string, opts OptsT) (scale float64) {
+func (svg *SVGfile) open(filename string) {
 	svg.filename = filename
-	svg.currentLayer = -1                                 // no layer open
-	svg.thresholds = append([]int{0}, opts.thresholds...) // the background counts as threshold 0
-	svg.setColours(opts.colours)
 	fh, err := os.Create(svg.filename)
 	if err != nil {
 		log.Fatalf("Unable to open SVG file %q - %s", svg.filename, err)
 	}
 	svg.file = fh
+	svg.write("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n") // needed so that next line can be a comment
+}
+
+func (svg *SVGfile) start(opts OptsT) (scale float64) {
+	svg.currentLayer = -1                                 // no layer open
+	svg.thresholds = append([]int{0}, opts.thresholds...) // the background counts as threshold 0
+	svg.setColours(opts.colours)
 	// write the wrapper SVG with  background colour first
 	viewbox := fmt.Sprintf("viewBox=\"0 0 %g %g\"", opts.paperSize.width, opts.paperSize.height)
 	// Set background via style rather than filling an oversized rect (which upsets Axidraw)
@@ -316,8 +320,6 @@ func (svg *SVGfile) openStart(filename string, opts OptsT) (scale float64) {
 	svgElement := fmt.Sprintf("<svg width=\"%gmm\" height=\"%gmm\" %s %s %s encoding=\"UTF-8\" >\n",
 		opts.paperSize.width, opts.paperSize.height, viewbox, bg, xmlns)
 	svg.write(svgElement)
-
-	svg.writeComment(fmt.Sprintf("%s, created by %s version %s", filename, hcName, hcVersion))
 
 	// Debug only: show paper limits
 	if opts.debug {

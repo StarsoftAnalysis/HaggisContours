@@ -186,5 +186,9 @@ type OptsT struct {
 	colours    string // two hex colours, e.g. "0033ff,0c4088"
 }
 
+func (o OptsT) String() string {
+	return fmt.Sprintf("infile: \"%s\", width: %d, height: %d, thresholds: %v, tcount: %d, margin: %.2f, paper: \"%s\", paperSize: {%.2f, %.2f}, image: %t, clip: %t, debug: %t, linewidth: %.2f, framewidth: %.2f, colours: \"%s\"", o.infile, o.width, o.height, o.thresholds, o.tcount, o.margin, o.paper, o.paperSize.width, o.paperSize.height, o.image, o.clip, o.debug, o.linewidth, o.framewidth, o.colours)
+}
+
 const white = 0xff
 const black = 0x00
