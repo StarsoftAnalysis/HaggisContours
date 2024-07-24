@@ -1,3 +1,6 @@
+> [!Note]
+> This repository has now been moved to [CodeBerg](https://codeberg.org/StarsoftAnalysis/HaggisContours). No further versions will be release here.
+
 # Haggis Contours
 
 Haggis Contours is a method of converting a heightmap (or similar input) to a set of contours, using the wild haggis algorithm.
